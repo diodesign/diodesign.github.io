@@ -1,0 +1,25 @@
+#
+# jekyll settings for this site
+#
+
+url: https://diodesign.org
+baseurl: /
+title: the dio design program
+description: Ssource code and notes from the dio design program
+permalink: /notes/:year/:month/:day/:title/
+
+exclude: [ README, LICENSE ]
+
+collections:
+  authors:
+    output: true
+    permalink: /about/:path/
+  code:
+    output: true
+    permalink: /code/:path/
+
+plugins:
+  - jekyll-feed
+
+feed:
+  excerpt_only: true

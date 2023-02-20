@@ -1,0 +1,24 @@
+---
+layout: base
+---
+
+<h2>{{ page.title }}</h2>
+
+{{ content }}
+
+<p>
+  {% assign author = site.authors | where: 'author', page.author | first %}
+  {% if author %}
+    <h3>By</h3> <a href="{{ author.url }}">{{ author.name }}</a> <h3>on {{ page.date | date: '%B %d, %Y' }}
+  {% endif %}
+</p>
+
+<p>
+  {% if page.previous %}
+    <h3>Previous</h3> <a href="{{page.previous.url}}">{{page.previous.title}}</a>
+  {% endif %}
+    
+  {% if page.next %}
+    <h3>{% if page.previous %} // {% endif %} Next</h3> <a href="{{page.next.url}}">{{ page.next.title }}</a>
+  {% endif %}
+</p>

@@ -1,0 +1,19 @@
+---
+layout: base
+---
+
+{{ content }}
+
+{% if site.authors %}
+  <h2>Contributors</h2>
+
+  <ul>
+    {% for author in site.authors %}
+      <li>
+        <a href="{{ author.url }}">{{ author.name }}</a>
+        {%- if author.summary -%}
+          ... {{ author.summary }}{%- endif -%}
+      </li>
+    {% endfor %}
+  </ul>
+{% endif %}

@@ -1,0 +1,31 @@
+    </div>
+</div>
+
+<div class="row">
+    <div class="column left">
+        &nbsp;
+    </div>
+    
+    <div class="column right" style="border: none;">
+        <p>
+            <a href="{{ site.baseurl }}">Home</a> //
+            <a href="#top">Top</a> /
+            
+            {% unless layout.show_permalink == false %} <a href="">Permalink</a> / {% endunless %}
+            
+            <a href="{{ site.baseurl }}feed.xml">Atom</a> /
+            <a href="{{ site.baseurl }}legal/">Legal</a>
+
+            {% assign newest_year = site.posts[0].date | date: "%Y" %}
+            {% assign oldest_year = site.posts[-1].date | date: "%Y" %}
+
+            {% if newest_year %}
+                / Copyright &copy;
+                {% if newest_year != oldest_year %} 
+                    {{ oldest_year }} -
+                {% endif %}
+                {{ newest_year }}
+            {% endif %}
+        </p>
+    </div>
+</div>

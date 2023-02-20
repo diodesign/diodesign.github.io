@@ -1,0 +1,24 @@
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8">
+
+<meta name="keywords" content="diodesign, Chris Williams, diosix, rust, javascript, riscv, risc-v, hypervisor" />
+<meta name="description" content="{% if page.description %}{{ page.description }}{% else %}{{ site.description }}{% endif %}" />
+
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/favicons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/favicons/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/assets/favicons/favicon-16x16.png">
+<link rel="manifest" href="/assets/favicons/site.webmanifest">
+
+<title>
+    {% if page.layout == "author" %}
+        About {{ page.name }} | {{ site.title }}
+    {% else %}
+        {% if page.short_title %}
+            {{ page.short_title }} | {{ site.title }}
+        {% else %}
+            {% if page.title %}{{ page.title }} | {% endif %} {{ site.title }}
+        {% endif %}
+    {% endif %}
+</title>
+
+<link rel="stylesheet" href="{{ "/assets/css/main.css" | relative_url }}">

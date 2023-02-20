@@ -1,0 +1,172 @@
+
+$backgroundColor: #fff;
+$headingColor: #603f83;
+$starColor: #906fb3;
+$mainruleColor: #aaa;
+
+$headingWeight: 100;
+$headingSize: 60px;
+$headingFont: 'Raleway', sans-serif;
+
+$subheadingColor: #000;
+$subheadingWeight: $headingWeight;
+$subheadingSize: $headingSize / 2;
+$subheadingFont: $headingFont;
+
+$miniheadingColor: $subheadingColor;
+$miniheadingWeight: $subheadingWeight;
+$miniheadingSize: $headingSize / 3;
+$miniheadingFont: $headingFont;
+
+$bodyColor: $subheadingColor;
+$bodyWeight: 400;
+$bodySize: $headingSize / 3;
+$bodyFont: $headingFont;
+
+@import url('https://fonts.googleapis.com/css2?family=Raleway:wght@100;400&display=swap');
+
+.eight-point-star {
+  background: $starColor;
+  width: $headingSize;
+  height: $headingSize;
+  position: relative;
+  text-align: center;
+  transform: rotate(0deg);
+  border-radius: 5px;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: $headingSize;
+    width: $headingSize;
+    background: $starColor;
+    transform: rotate(45deg);
+    border-radius: 5px;
+  }
+}
+
+.float_half_box {
+  float: left;
+  width: 50%;
+}
+
+.slimbox {
+  display: inline;
+  padding: 5px 10px 5px 10px;
+  background: #eee;
+  border-radius: 5px;
+  font-size: smaller;
+}
+
+.disguise_anchors a {
+  text-decoration: none;
+  font-weight: normal;
+  color: $bodyColor;
+}
+
+.column {
+  float: left;
+  padding: 0px;
+  margin: 0px;
+}
+
+.column.left {
+  width: $headingSize;
+  padding: 0px;
+  margin-left: $headingSize;
+}
+
+.column.right {
+  width: 90%;
+  padding: 0px;
+  border-bottom: solid $mainruleColor 1px;
+  margin: 0px 20px 0px 20px;
+}
+
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+h1 {
+  color: $headingColor;
+  font-weight: $headingWeight;
+  font-size: $headingSize;
+  font-family: $headingFont;
+  padding: 0px;
+  margin: 0px;
+}
+
+h2 {
+  color: $subheadingColor;
+  font-weight: $subheadingWeight;
+  font-size: $subheadingSize;
+  font-family: $subheadingFont;
+  padding-top: 20px;
+  margin: 0px;
+}
+
+h3 {
+  color: $miniheadingColor;
+  font-weight: $miniheadingWeight;
+  font-size: $miniheadingSize;
+  font-family: $miniheadingFont;
+  padding: 0px;
+  margin: 0px;
+  display: inline;
+}
+
+a {
+  text-decoration: none;
+  color: $headingColor;
+  font-weight: bolder;
+}
+
+a:hover {
+  color: $headingColor;
+  text-decoration: underline;
+}
+
+a:visited {
+  color: $subheadingColor;
+}
+
+body {
+  background: $backgroundColor;
+  color: $bodyColor;
+  font-weight: $bodyWeight;
+  font-size: $bodySize;
+  font-family: $bodyFont;
+  padding: 0px;
+  margin: 40px;
+}
+
+@media only screen and (max-width: 1300px) {
+  .float_half_box {
+    float: none;
+    width: auto;
+  } 
+
+  .column.left {
+    display: none;
+  }
+  
+  .column.right {
+    width: 100%;
+    border: none;
+  }
+
+  body {
+    margin-left: 10px;
+    margin-top: 10px;
+  }
+}
+
+@media only screen and (min-width: 1300px) {
+  .column.right {
+    width: 1000px;
+  }
+}

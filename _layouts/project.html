@@ -1,0 +1,54 @@
+---
+layout: base
+---
+
+<h2>{{ page.name }}</h2>
+
+<p class="disguise_anchors">
+  {% for attr in page.attributes %}
+    {% if attr.category %}
+      {% for entry in attr.list %}
+        {% if forloop.first %}
+          <strong>{{ attr.category }}{% if forloop.length > 1 %}s{% endif %}:</strong>
+        {% endif %}
+        {% if entry.url %}
+          <a
+            class="slimbox"
+            rel="nofollow"
+            href="{{ entry.url }}">{{ entry.label }}</a>
+        {% else %}
+          <span class="slimbox">{{ entry.label }}</span>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+  {% endfor %}
+</p>
+
+{{ content }}
+
+{% if page.links %}
+  <h2>Links</h2>
+  <ul>
+    {% for entry in page.links %}
+      <li>
+        <p>
+          <a rel="nofollow" href="{{ entry.url }}">{{ entry.label }}</a>
+        </p>
+      </li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+{% if page.contributors %}
+  <h2>Contributors</h2>
+  <p>
+    {% for entry in page.contributors %}
+      {% assign author = site.authors | where: "author", entry -%}
+      {% if author -%}
+        <a rel="nofollow" href="{{ author.first.url }}">{{ author.first.name }}</a>
+      {%- endif -%}
+      {%- unless forloop.last -%},
+      {% endunless %}
+    {% endfor %}
+  </p>
+{% endif %}

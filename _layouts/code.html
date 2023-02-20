@@ -1,0 +1,21 @@
+---
+layout: base
+---
+
+{{ content }}
+
+{% assign sorted_projects = site.code | sort: "importance" %}
+
+{% if sorted_projects %}
+  <h2>Projects</h2>
+  <ul>
+    {% for project in sorted_projects %}
+      <li>
+        <a href="{{ project.url }}">{{ project.name }}</a>
+        {%- if project.summary -%}
+          ... {{ project.summary }}
+        {%- endif -%}
+      </li>
+    {% endfor %}
+  </ul>
+{% endif %}

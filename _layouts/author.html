@@ -1,0 +1,36 @@
+---
+layout: base
+---
+
+<h2>Who is {{ page.name }}?</h2>
+
+{{ content }}
+
+<div class="float_half_box">
+  <h2>Socials and contact</h2>
+
+  <ul>
+    {% for entry in page.contacts %}
+      <li>
+        <p>
+          <a rel="nofollow" href="{{ entry.url }}">{{ entry.label }}</a>
+        </p>
+      </li>
+    {% endfor %}
+  </ul>
+</div>
+
+<div class="float_half_box">
+  <h2>Latest notes</h2>
+
+  <ul>
+    {% assign my_posts = site.posts | where: 'author', page.author %}
+    {% for post in my_posts limit: 5 %}
+      <li>
+        <p>
+          <a href="{{ post.url }}">{{ post.title }}</a>
+        </p>
+      </li>
+    {% endfor %}
+  </ul>
+</div>
