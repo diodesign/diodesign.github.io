@@ -12,7 +12,7 @@ All other [code and data](https://github.com/diodesign/diodesign.github.io) for 
 
 ## Privacy statement
 
-This website is hosted by GitHub, which collects and processes some data supplied by visitors, such as their IP addresses. See [here](https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement) for more information on what data is collected and how it is used.
+This website is hosted by GitHub, which collects and processes some data supplied by visitors, such as their IP addresses. See GitHub's [privacy statement](https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement) for more information on what data is collected and how it is used.
 
 This website does not otherwise use cookies or trackers, nor collects, sells, or processes visitors' personal information.
 

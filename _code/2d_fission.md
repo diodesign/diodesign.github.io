@@ -25,7 +25,7 @@ links: [
     { label: Sketch, url: https://editor.p5js.org/diodesign/sketches/MJ0Xl8NR }
 ]
 importance: normal
-featured: this is a 2d illustration of a fission chain reaction
+featured: this is a 2d illustration of a fission chain reaction.
 ---
 
 I wrote this while relaxing in a spa hotel 

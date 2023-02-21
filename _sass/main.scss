@@ -4,6 +4,7 @@ $headingColor: #603f83;
 $starColor: #906fb3;
 $mainruleColor: #aaa;
 $infoboxColor: #eee;
+$dropshadowColor: black;
 
 $headingWeight: 100;
 $headingSize: 60px;
@@ -85,22 +86,22 @@ $maxWidth: 1300px;
   float: right;
 }
 
-.hero_circle {
+.hero_badge {
   object-fit: cover;
-  border-radius: 50%;
+  border-radius: 40%;
   height: 100px;
   width: 100px;
-  border: solid black 5px;
-  margin: 10px;
+  border: nome;
 }
 
 .featured_work {
   img {
     float: left;
     margin-right: 20px;
+    filter: drop-shadow(0 0 2px $dropshadowColor);
   }
 
-  display: table-row;
+  min-height: 100px;
 }
 
 .sketch {
@@ -246,6 +247,7 @@ body {
     }
 
     display: block;
+    min-height: 0px;
     border-bottom: dotted $headingColor 1px;
   }
 

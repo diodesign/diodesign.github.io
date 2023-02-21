@@ -6,16 +6,12 @@ layout: base
 
 <h2>Featured work</h2>
 
-<p>
-  something something something...
-</p> 
-
 {% assign sorted_projects = site.code | sort: "importance" %}
 {% for project in sorted_projects %}
   {% if project.featured %}
     <div class="featured_work">
       {% if project.hero.url %}
-        <a href="{{ project.url }}"><img src="/assets/heroes/{{ project.hero.url }}" class="hero_circle" alt="{{ project.hero.alt }}" /></a>
+        <a href="{{ project.url }}"><img src="/assets/heroes/{{ project.hero.url }}" class="hero_badge" alt="{{ project.hero.alt }}" /></a>
       {% endif %}
       <p><a href="{{ project.url }}">{{ project.name }}</a></p>
       <p>{{ project.featured }}</p>
@@ -27,7 +23,7 @@ layout: base
   {% if post.featured %}
     <div class="featured_work">
       {% if post.hero.url %}
-        <a href="{{ post.url }}"><img src="/assets/heroes/{{ post.hero.url }}" class="hero_circle" alt="{{ post.hero.alt }}" /></a>
+        <a href="{{ post.url }}"><img src="/assets/heroes/{{ post.hero.url }}" class="hero_badge" alt="{{ post.hero.alt }}" /></a>
       {% endif %}
       <p><a href="{{ post.url }}">{{ post.title }}</a></p>
       <p>{{ post.featured }}</p>
