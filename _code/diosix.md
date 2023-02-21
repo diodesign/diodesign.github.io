@@ -3,6 +3,7 @@ layout: project
 name: Diosix
 summary: Rust-RISC-V hypervisor
 contributors: [ cwilliams ]
+hero: { url: diosix.jpg, alt: The RISC-V logo in white against a blue background }
 attributes: [
     {
         category: License,
@@ -26,7 +27,7 @@ links: [
     { label: Website, url: https://www.diosix.org/ }
 ]
 importance: high
-featured: true
+featured: a project i really need to finish omg
 ---
 
 Diosix is going to be something one day.

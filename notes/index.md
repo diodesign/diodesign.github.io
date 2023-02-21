@@ -8,8 +8,7 @@ description: "Technical notes and other personal observations"
 This is the notes index page. These are the latest posts.
 
 {% for post in site.posts limit: 10 %}
-  -
-  <a href="{{ post.url }}">{{ post.title }}</a>
+  - [{{ post.title }}]({{ post.url }})
 {% endfor %}
 
 To browse all notes, dive into the archive organized [by date](all-by-date/) or [by tag](all-by-tag/).

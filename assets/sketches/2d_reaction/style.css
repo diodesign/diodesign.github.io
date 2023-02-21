@@ -1,0 +1,11 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  color: white;
+  font-family: sans;
+  font-size: 14pt;
+  background: black;
+}
+canvas {
+  display: block;
+}

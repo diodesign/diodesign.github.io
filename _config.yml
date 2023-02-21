@@ -23,3 +23,7 @@ plugins:
 
 feed:
   excerpt_only: true
+
+compress_html:
+  comments: all
+  endings: all

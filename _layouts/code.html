@@ -11,10 +11,12 @@ layout: base
   <ul>
     {% for project in sorted_projects %}
       <li>
-        <a href="{{ project.url }}">{{ project.name }}</a>
-        {%- if project.summary -%}
-          ... {{ project.summary }}
-        {%- endif -%}
+        <p>
+          <a href="{{ project.url }}">{{ project.name }}</a>
+          {%- if project.summary -%}
+            ... {{ project.summary }}
+          {%- endif -%}
+        </p>
       </li>
     {% endfor %}
   </ul>

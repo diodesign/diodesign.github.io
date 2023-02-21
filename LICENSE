@@ -1,10 +1,16 @@
-Copyright (c) Chris Williams and contributors
+jekyll-compress-html Copyright (c) 2014 Anatol Broder
+
+The _layouts/compress.html file was developed and maintained by Anatol Broder. Used under license. See the links below for more information.
+
+Source code: https://github.com/penibelst/jekyll-compress-html
+License: https://github.com/penibelst/jekyll-compress-html/blob/master/LICENSE
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Copyright (c) 2023 Chris Williams and contributors
 
 CC BY-NC-SA 4.0
 
-The material in this repository (https://github.com/diodesign/diodesign.github.io) and website (https://diodesign.org/) is made available under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License. Below is a human-readable summary of (and not a substitute for) that license:
-
-- - - - - - - - - - - - - - - - - - - - - - - - - - - -
+All other material in this repository (https://github.com/diodesign/diodesign.github.io) and website (https://diodesign.org/) is made available under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License. Below is a human-readable summary of (and not a substitute for) that license:
 
 You are free to:
 
@@ -17,7 +23,5 @@ Under the following terms:
 * You may not use the material for commercial purposes;
 * If you remix, transform, or build upon the material, you must distribute your contributions under the same license as the original;
 * You may not apply legal terms or technological measures that legally restrict others from doing anything the license permits.
-
-- - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 The full text of this license can be found here: https://creativecommons.org/licenses/by-nc-sa/4.0/

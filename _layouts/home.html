@@ -6,13 +6,33 @@ layout: base
 
 <h2>Featured work</h2>
 
-<p>
-  
-</p>
+<ul>
+  {% assign sorted_projects = site.code | sort: "importance" %}
+  {% for project in sorted_projects %}
+    {% if project.featured %}
+      <li>
+        <p>
+          <a href="{{ project.url }}">{{ project.name }}</a> {{ project.featured }}
+        </p>
+      </li>
+    {% endif %}
+  {% endfor %}
+</ul>
+
+<ul>
+  {% for post in site.posts %}
+    {% if post.featured %}
+      <li>
+        <p>
+          <a href="{{ post.url }}">{{ post.title }}</a> {{ post.featured }}
+        </p>
+      </li>
+    {% endif %}
+  {% endfor %}
+</ul>
 
 <p>
   {% if site.posts %}
-    <h3>Read this</h3>
-    <a href="{{site.posts[0].url}}">{{ site.posts[0].title }}</a>
+    <h3>Or start here</h3> <a href="{{site.posts[0].url}}">{{ site.posts[0].title }}</a>
   {% endif %}
 </p>

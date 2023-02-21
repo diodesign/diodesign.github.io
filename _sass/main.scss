@@ -23,6 +23,8 @@ $bodyWeight: 400;
 $bodySize: $headingSize / 3;
 $bodyFont: $headingFont;
 
+$maxWidth: 1300px;
+
 @import url('https://fonts.googleapis.com/css2?family=Raleway:wght@100;400&display=swap');
 
 .eight-point-star {
@@ -60,10 +62,55 @@ $bodyFont: $headingFont;
   font-size: smaller;
 }
 
+.slimbox_label {
+  font-size: smaller;
+  font-weight: bolder;
+}
+
 .disguise_anchors a {
   text-decoration: none;
   font-weight: normal;
   color: $bodyColor;
+}
+
+.hero_image {
+  width: 100%;
+  border: none;
+}
+
+.hero_image_caption {
+  font-size: small;
+  font-style: italic;
+  float: right;
+}
+
+.sketch {
+  position: relative;
+  margin-bottom: 10px;
+  max-width: $maxWidth;
+  width: 100%;
+}
+
+.sketch .thumbnail {
+  max-width: $maxWidth;
+  width: 100%;
+}
+
+.sketch .run {
+  position: absolute;
+  max-width: $maxWidth;
+  width: 300px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.sketch .run svg {
+  fill: $backgroundColor;
+}
+.sketch .run:hover svg,
+.sketch .run:focus svg {
+  cursor: pointer;
+  fill: $headingColor;
 }
 
 .column {
@@ -144,7 +191,7 @@ body {
   margin: 40px;
 }
 
-@media only screen and (max-width: 1300px) {
+@media only screen and (max-width: $maxWidth) {
   .float_half_box {
     float: none;
     width: auto;
@@ -159,14 +206,26 @@ body {
     border: none;
   }
 
+  .hide_on_mobile {
+    display: none;
+  }
+
+  .hero_image_caption {
+    display: none;
+  }
+
+  .run {
+    display: none;
+  }
+
   body {
     margin-left: 10px;
     margin-top: 10px;
   }
 }
 
-@media only screen and (min-width: 1300px) {
+@media only screen and (min-width: $maxWidth) {
   .column.right {
-    width: 1000px;
+    width: $maxWidth - 300px;
   }
 }

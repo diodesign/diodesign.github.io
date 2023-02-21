@@ -8,7 +8,6 @@ layout: base
 
 <div class="float_half_box">
   <h2>Socials and contact</h2>
-
   <ul>
     {% for entry in page.contacts %}
       <li>
@@ -22,7 +21,6 @@ layout: base
 
 <div class="float_half_box">
   <h2>Latest notes</h2>
-
   <ul>
     {% assign my_posts = site.posts | where: 'author', page.author %}
     {% for post in my_posts limit: 5 %}
@@ -33,4 +31,25 @@ layout: base
       </li>
     {% endfor %}
   </ul>
+</div>
+
+<div style="clear: both;">
+  {% assign done_header = false %}
+
+  {% for project in site.code %}
+    {% for contrib in project.contributors %}
+      {% if contrib == page.author %}
+        {% if done_header == false %}
+          <h2>Projects</h2>
+          <p>
+          {% assign done_header = true %}
+        {% endif %}
+        <a class="slimbox" href="{{ project.url }}">{{ project.name }}</a> 
+      {% endif %}
+    {% endfor %}
+  {% endfor %}
+
+  {% if done_header == true %}
+  </p>
+  {% endif %}
 </div>
