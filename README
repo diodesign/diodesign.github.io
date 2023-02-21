@@ -4,7 +4,7 @@ the dio design program
 
 This repository contains the code and data for the dio design program available from the diodesign.org website. This material may be of interest to those building websites using Jekyll and Liquid.
 
-The dio design program is a non-commercial personal endeavor to highlight and discuss open source projects, software, and related work. It is hosted using GitHub Pages and Jekyll with some Liquid scripting, and HTML and CSS for layout. It was developed on Fedora Linux using Microsoft Visual Studio Code with Google Chrome.
+The dio design program is a non-commercial personal endeavor to highlight and discuss open source projects, software, and related work. It is hosted using GitHub Pages and Jekyll with some Liquid scripting, and HTML and CSS for layout. It was developed on Fedora Linux using Microsoft Visual Studio Code with Google Chrome and Mozilla Firefox.
 
 See LICENSE for copyright and terms of use.
 
