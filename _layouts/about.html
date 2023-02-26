@@ -10,7 +10,7 @@ layout: base
   <ul>
     {% for author in site.authors %}
       <li>
-        <a href="{{ author.url }}">{{ author.name }}</a>
+        <a href="{{ author.url }}">{{ author.title }}</a>
         {%- if author.summary -%}
           ... {{ author.summary }}{%- endif -%}
       </li>

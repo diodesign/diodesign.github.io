@@ -1,7 +1,7 @@
 ---
 layout: author
 author: cwilliams
-name: Chris Williams
+title: Chris Williams
 summary: Just a dude, you know?
 contacts: [
     { label: GitHub,    url: https://github.com/diodesign },

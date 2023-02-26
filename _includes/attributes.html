@@ -1,0 +1,22 @@
+<div class="hide_on_mobile">
+  <p class="disguise_anchors">
+    {% for attr in page.attributes %}
+      {% if attr.category %}
+        {% for entry in attr.list %}
+          {% if forloop.first %}
+            <span class="slimbox_label">{{ attr.category }}{% if forloop.length > 1 %}s{% endif %}</span>
+          {% endif %}
+          {% if entry.url %}
+            <a
+              class="slimbox"
+              rel="nofollow"
+              href="{{ entry.url }}">{{ entry.label }}</a>
+          {% else %}
+            <span class="slimbox">{{ entry.label }}</span>
+          {% endif %}
+        {% endfor %}
+        &nbsp;
+      {% endif %}
+    {% endfor %}
+  </p>
+</div>

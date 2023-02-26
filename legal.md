@@ -1,5 +1,6 @@
 ---
 layout: base
+short_title: Legal info
 title: Copyright and privacy
 description: Copyright, licensing, and privacy statement for this website
 ---

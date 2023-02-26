@@ -2,7 +2,7 @@
 layout: base
 ---
 
-<h2>Who is {{ page.name }}?</h2>
+<h2>Who is {{ page.title }}?</h2>
 
 {{ content }}
 
@@ -44,7 +44,7 @@ layout: base
           <p>
           {% assign done_header = true %}
         {% endif %}
-        <a class="slimbox" href="{{ project.url }}">{{ project.name }}</a> 
+        <a class="slimbox" href="{{ project.url }}">{{ project.title }}</a> 
       {% endif %}
     {% endfor %}
   {% endfor %}

@@ -10,15 +10,14 @@
 <link rel="manifest" href="/assets/favicons/site.webmanifest">
 
 <title>
-    {% if page.layout == "author" %}
-        About {{ page.name }} | {{ site.title }}
-    {% else %}
-        {% if page.short_title %}
-            {{ page.short_title }} | {{ site.title }}
-        {% else %}
-            {% if page.title %}{{ page.title }} | {% endif %} {{ site.title }}
-        {% endif %}
-    {% endif %}
+  {%- if page.short_title -%}
+    {{ page.short_title }} | 
+  {%- else -%}
+    {%- if page.title -%}
+      {{ page.title }} | 
+    {%- endif -%}
+  {% endif %}
+  {{ site.title }}
 </title>
 
 <link rel="stylesheet" href="{{ "/assets/css/main.css" | relative_url }}">

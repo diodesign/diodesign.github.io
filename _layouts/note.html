@@ -9,7 +9,7 @@ layout: base
 <p>
   {% assign author = site.authors | where: 'author', page.author | first %}
   {% if author %}
-    <h3>By</h3> <a href="{{ author.url }}">{{ author.name }}</a> <h3>on {{ page.date | date: '%B %d, %Y' }}
+    <h3>By</h3> <a href="{{ author.url }}">{{ author.title }}</a> <h3>on {{ page.date | date: '%B %d, %Y' }}
   {% endif %}
 </p>
 

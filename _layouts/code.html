@@ -12,7 +12,7 @@ layout: base
     {% for project in sorted_projects %}
       <li>
         <p>
-          <a href="{{ project.url }}">{{ project.name }}</a>
+          <a href="{{ project.url }}">{{ project.title }}</a>
           {%- if project.summary -%}
             ... {{ project.summary }}
           {%- endif -%}

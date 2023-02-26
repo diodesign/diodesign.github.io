@@ -1,0 +1,36 @@
+{
+  "base_url": "/assets/images/",
+
+  "files": [
+    {
+      "name": "2d_reaction",
+      "filename": "2d_reaction.png",
+      "alt": "Screenshot of a fission reaction playing out",
+      "sketch": "2d_reaction"
+    },
+
+    {
+      "name": "diosix",
+      "filename": "diosix.jpg",
+      "alt": "The RISC-V logo against a blue background"
+    },
+
+    {
+      "name": "mipsilver",
+      "filename": "mipsilver.jpg",
+      "alt": "Screenshot from the PlayStation 1 game Final Fantasy 7 of Cloud activating a limit break"
+    },
+
+    {
+      "name": "riscv",
+      "filename": "riscv.png",
+      "alt": "The RV part of RISC-V International's RISC-V logo"
+    },
+
+    {
+      "name": "nuke",
+      "filename": "nuke.jpg",
+      "alt": "The nuclear radiation symbol that looks like it's scuffed up"
+    }
+  ]
+}

@@ -1,5 +1,7 @@
 /* utility functions for site */
 
+/* run a sketch by replacing a thumbnail image on the page (sketchThumbnail) with an iframe embedding the sketch
+   sketchSrc = URL of sketch to embed on the page within an iframe */
 function run_sketch(sketchSrc) {
   var thumbnail = document.getElementById("sketchThumbnail");
   var iframe = document.createElement('iframe');

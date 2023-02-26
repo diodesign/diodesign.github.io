@@ -1,0 +1,21 @@
+{
+  "content": [
+    {
+      "url": "/code/diosix/",
+      "image": "riscv",
+      "description": "A RISC-V hypervisor written in Rust that I should have finished but got too tied up in real day job work."
+    },
+
+    {
+      "url": "/code/2d_fission/",
+      "image": "nuke",
+      "description": "An animated illustration of a nuclear fission chain reaction."
+    },
+
+    {
+      "url": "/notes/2020/01/16/test-pilot/",
+      "image": "",
+      "description": "My first post here, and wow what a beginning. Must read."
+    }
+  ]
+}

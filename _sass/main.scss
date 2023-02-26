@@ -88,7 +88,7 @@ $maxWidth: 1300px;
 
 .hero_badge {
   object-fit: cover;
-  border-radius: 40%;
+  border-radius: 35%;
   height: 100px;
   width: 100px;
   border: nome;
@@ -98,10 +98,14 @@ $maxWidth: 1300px;
   img {
     float: left;
     margin-right: 20px;
-    filter: drop-shadow(0 0 2px $dropshadowColor);
+    filter: contrast(120%) sepia(100%) hue-rotate(230deg);
   }
 
   min-height: 100px;
+
+  a :hover {
+    filter: none;
+  }
 }
 
 .sketch {

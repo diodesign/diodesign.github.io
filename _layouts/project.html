@@ -2,54 +2,15 @@
 layout: base
 ---
 
-<h2>{{ page.name }}</h2>
+<h2>{{ page.title }}</h2>
 
-<p>{% if page.hero.url %}
-  {% capture hero_path %}/assets/heroes/{{ page.hero.url }}{% endcapture %}
-  {% assign hero_image = site.static_files | where: "path", hero_path | first %}
-  {% if hero_image %}
-    {% if page.hero.sketch %}
-      <div class="sketch">
-        <div id="sketchButton" class="run" onClick="run_sketch('/assets/sketches/{{ page.hero.sketch }}/');">
-          {%- include run_button.svg -%}
-        </div>
-        <img id="sketchThumbnail" class="thumbnail" src="{{ hero_path }}" alt="landscape" />
-        <span class="hero_image_caption">Click the play button above to run this project in your browser 
-        {%- if page.hero.alt -%}
-          ... {{ page.hero.alt }}</span>
-        {%- endif -%}
-      </div>
-    {% else %}
-      <img class="hero_image" alt="{{ page.hero.alt }}" src="{{ hero_path }}" />
-      {% if page.hero.alt %}
-        <span class="hero_image_caption">{{ page.hero.alt }}</span>
-      {% endif %}
-    {% endif %}
-  {% endif %}
-{% endif %}</p>
-
-<div class="hide_on_mobile">
-  <p class="disguise_anchors">
-    {% for attr in page.attributes %}
-      {% if attr.category %}
-        {% for entry in attr.list %}
-          {% if forloop.first %}
-            <span class="slimbox_label">{{ attr.category }}{% if forloop.length > 1 %}s{% endif %}</span>
-          {% endif %}
-          {% if entry.url %}
-            <a
-              class="slimbox"
-              rel="nofollow"
-              href="{{ entry.url }}">{{ entry.label }}</a>
-          {% else %}
-            <span class="slimbox">{{ entry.label }}</span>
-          {% endif %}
-        {% endfor %}
-        &nbsp;
-      {% endif %}
-    {% endfor %}
+{% if page.hero %}
+  <p>
+    {% include hero.html %}
   </p>
-</div>
+{% endif %}
+
+{% include attributes.html %}
 
 {{ content }}
 
@@ -70,9 +31,9 @@ layout: base
   <h2>Contributors</h2>
   <p>
     {% for entry in page.contributors %}
-      {% assign author = site.authors | where: "author", entry -%}
+      {% assign author = site.authors | where: "author", entry | first -%}
       {% if author -%}
-        <a rel="nofollow" href="{{ author.first.url }}">{{ author.first.name }}</a>
+        <a rel="nofollow" href="{{ author.url }}">{{ author.title }}</a>
       {%- endif -%}
       {%- unless forloop.last -%},
       {% endunless %}

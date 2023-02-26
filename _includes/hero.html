@@ -1,0 +1,19 @@
+{%- assign image = site.data.images.files | where: "name", page.hero | first -%}
+{%- if image -%}
+  {%- capture image_url %}{{ site.data.images.base_url }}{{ image.filename }}{% endcapture -%}
+  {% if image.sketch %}
+    <div class="sketch">
+      <div id="sketchButton" class="run" onClick="run_sketch('/assets/sketches/{{ image.sketch }}/');">
+        {%- include run_button.svg -%}
+      </div>
+      <img id="sketchThumbnail" class="thumbnail" src="{{ image_url }}" alt="{{ image.alt }}" />
+
+      <span class="hero_image_caption">Click above to run this project in your browser</span>
+    </div>
+  {% else %}
+    <img class="hero_image" alt="{{ image.alt }}" src="{{ image_url }}" />
+    {% if image.alt %}
+      <span class="hero_image_caption">{{ image.alt }}</span>
+    {% endif %}
+  {% endif %}
+{%- endif -%}

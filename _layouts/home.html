@@ -4,35 +4,22 @@ layout: base
 
 {{ content }}
 
-<h2>Featured work</h2>
-
-{% assign sorted_projects = site.code | sort: "importance" %}
-{% for project in sorted_projects %}
-  {% if project.featured %}
-    <div class="featured_work">
-      {% if project.hero.url %}
-        <a href="{{ project.url }}"><img src="/assets/heroes/{{ project.hero.url }}" class="hero_badge" alt="{{ project.hero.alt }}" /></a>
-      {% endif %}
-      <p><a href="{{ project.url }}">{{ project.name }}</a></p>
-      <p>{{ project.featured }}</p>
-    </div>
+{% for content in site.data.featured.content %}
+  {% if forloop.first %}
+    <h2>Featured work</h2>
   {% endif %}
+
+  <div class="featured_work">
+    {%- include featured.html -%}
+
+    {% assign page = site.documents | where: "url", content.url | first %}
+    <p><a href="{{ content.url }}">{{ page.title }}</a></p>
+    <p>{{ content.description }}</p>
+  </div>
 {% endfor %}
 
-{% for post in site.posts %}
-  {% if post.featured %}
-    <div class="featured_work">
-      {% if post.hero.url %}
-        <a href="{{ post.url }}"><img src="/assets/heroes/{{ post.hero.url }}" class="hero_badge" alt="{{ post.hero.alt }}" /></a>
-      {% endif %}
-      <p><a href="{{ post.url }}">{{ post.title }}</a></p>
-      <p>{{ post.featured }}</p>
-    </div>
-  {% endif %}
-{% endfor %}
-
-<p>
-  {% if site.posts %}
+{% if site.posts %}
+  <p>
     <h3>Or start here</h3> <a href="{{site.posts[0].url}}">{{ site.posts[0].title }}</a>
-  {% endif %}
-</p>
+  </p>
+{% endif %}
