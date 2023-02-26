@@ -9,11 +9,13 @@ description: Copyright, licensing, and privacy statement for this website
 
 This website includes a [HTML minifier](https://jch.penibelst.de/) copyright &copy; Anatol Broder. Used under license.
 
-All other [code and data](https://github.com/diodesign/diodesign.github.io) for this website is copyright &copy; Chris Williams and contributors. Some rights reserved. This content is made available under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License [defined here](https://creativecommons.org/licenses/by-nc-sa/4.0/).
+All other [code and data](https://github.com/diodesign/diodesign.github.io) for this website is copyright &copy; [its contributors](/about/). Some rights reserved. This content is made available under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License [defined here](https://creativecommons.org/licenses/by-nc-sa/4.0/).
+
+This website also links to projects that are distributed under their own licenses and terms of use. See those individual projects for more details.
 
 ## Privacy statement
 
-This website is hosted by GitHub, which collects and processes some data supplied by visitors, such as their IP addresses. See GitHub's [privacy statement](https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement) for more information on what data is collected and how it is used.
+The dio design program is hosted by GitHub, which collects and processes some data supplied by visitors, such as their IP addresses. See GitHub's [privacy statement](https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement) for more information on what data is collected and how it is used.
 
 This website does not otherwise use cookies or trackers, nor collects, sells, or processes visitors' personal information.
 

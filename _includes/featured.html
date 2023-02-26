@@ -1,4 +1,4 @@
-{%- assign image = site.data.images.files | where: "name", content.image | first -%}
+{%- assign image = site.data.images.featured | where: "name", content.image | first -%}
 {%- if image -%}
   <a href="{{ content.url }}"><img src="{{ site.data.images.base_url }}/{{ image.filename }}" class="hero_badge" alt="{{ image.alt }}" /></a>
 {% endif %}

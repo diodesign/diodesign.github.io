@@ -19,8 +19,10 @@
       "name": "mipsilver",
       "filename": "mipsilver.jpg",
       "alt": "Screenshot from the PlayStation 1 game Final Fantasy 7 of Cloud activating a limit break"
-    },
+    }
+  ],
 
+  "featured": [
     {
       "name": "riscv",
       "filename": "riscv.png",
