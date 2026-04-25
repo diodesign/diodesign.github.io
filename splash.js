@@ -10,12 +10,12 @@ let isMouseDown = false;
 const GRID_COLS = 320;
 const GRID_ROWS = 160;
 const TOTAL_CELLS = GRID_COLS * GRID_ROWS;
-const TICK_RATE = 1000 / 50; // ms between CA steps
+const TICK_RATE = 1000 / 60; // ms between CA steps
 const START_DELAY = 2000; // 2 seconds static logo
 const SPRINKLE_DELAY = 5000; // time under threshold before we add more
 const MIN_POPULATION_RATIO = 0.1; // ensure minimum population
 const LOW_CELL_THRESHOLD = Math.floor(TOTAL_CELLS * MIN_POPULATION_RATIO);
-const FADE_RATE = 0.02; // Visual decay speed for dead cells
+const FADE_RATE = 0.04; // Visual decay speed for dead cells
 
 // State buffers
 let grid = new Uint8Array(TOTAL_CELLS);
@@ -36,7 +36,39 @@ const ASCII_LOGO = [
     " #####  #  ####  #####  ######  ####  #  ####  #    # "
 ];
 
+// Neighbor index caches for performance optimization
+const n8Offsets = new Int32Array(TOTAL_CELLS * 8);
+const n4Offsets = new Int32Array(TOTAL_CELLS * 4);
+
+function precalculateNeighbors() {
+    for (let y = 0; y < GRID_ROWS; y++) {
+        for (let x = 0; x < GRID_COLS; x++) {
+            const idx = y * GRID_COLS + x;
+
+            // 8 Neighbors (Moore)
+            let n8Count = 0;
+            for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                    if (dx === 0 && dy === 0) continue;
+                    const nx = (x + dx + GRID_COLS) % GRID_COLS;
+                    const ny = (y + dy + GRID_ROWS) % GRID_ROWS;
+                    n8Offsets[idx * 8 + n8Count++] = ny * GRID_COLS + nx;
+                }
+            }
+
+            // 4 Neighbors (Von Neumann)
+            const dirs = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+            for (let i = 0; i < 4; i++) {
+                const nx = (x + dirs[i][0] + GRID_COLS) % GRID_COLS;
+                const ny = (y + dirs[i][1] + GRID_ROWS) % GRID_ROWS;
+                n4Offsets[idx * 4 + i] = ny * GRID_COLS + nx;
+            }
+        }
+    }
+}
+
 function init() {
+    precalculateNeighbors();
     resize();
     resetGrid();
     startTime = performance.now();
@@ -125,39 +157,6 @@ function fillAtMouse(e) {
     fillCluster(mx, my, 4);
 }
 
-/**
- * Standard 8-neighbor count for CA logic (Moore neighborhood)
- */
-function countNeighbors8(x, y) {
-    let sum = 0;
-    for (let i = -1; i < 2; i++) {
-        for (let j = -1; j < 2; j++) {
-            if (i === 0 && j === 0) continue;
-            const col = (x + i + GRID_COLS) % GRID_COLS;
-            const row = (y + j + GRID_ROWS) % GRID_ROWS;
-            sum += grid[row * GRID_COLS + col];
-        }
-    }
-    return sum;
-}
-
-/**
- * 4-neighbor count (Up, Down, Left, Right) for aesthetic color intensity
- */
-function countNeighbors4(x, y) {
-    let sum = 0;
-    const neighbors = [
-        [x, (y - 1 + GRID_ROWS) % GRID_ROWS],
-        [x, (y + 1 + GRID_ROWS) % GRID_ROWS],
-        [(x - 1 + GRID_COLS) % GRID_COLS, y],
-        [(x + 1 + GRID_COLS) % GRID_COLS, y]
-    ];
-    for (const [nx, ny] of neighbors) {
-        sum += grid[ny * GRID_COLS + nx];
-    }
-    return sum;
-}
-
 function update(time) {
     if (time - startTime < START_DELAY) return;
     if (time - lastUpdate < TICK_RATE) return;
@@ -165,36 +164,44 @@ function update(time) {
 
     let activeCells = 0;
 
-    // Phase 1: Pure CA Logic on binary grid (HighLife: B36/S23)
-    for (let y = 0; y < GRID_ROWS; y++) {
-        for (let x = 0; x < GRID_COLS; x++) {
-            const idx = y * GRID_COLS + x;
-            const neighbors = countNeighbors8(x, y);
-            const isAlive = grid[idx] === 1;
+    // Phase 1: Calculate next generation (HighLife B36/S23)
+    // Optimized with pre-calculated neighbor indices
+    for (let i = 0; i < TOTAL_CELLS; i++) {
+        let n8 = 0;
+        const base = i * 8;
+        n8 += grid[n8Offsets[base]];
+        n8 += grid[n8Offsets[base + 1]];
+        n8 += grid[n8Offsets[base + 2]];
+        n8 += grid[n8Offsets[base + 3]];
+        n8 += grid[n8Offsets[base + 4]];
+        n8 += grid[n8Offsets[base + 5]];
+        n8 += grid[n8Offsets[base + 6]];
+        n8 += grid[n8Offsets[base + 7]];
 
-            if (isAlive) {
-                nextGrid[idx] = (neighbors === 2 || neighbors === 3) ? 1 : 0;
-            } else {
-                nextGrid[idx] = (neighbors === 3 || neighbors === 6) ? 1 : 0;
-            }
+        if (grid[i] === 1) {
+            nextGrid[i] = (n8 === 2 || n8 === 3) ? 1 : 0;
+        } else {
+            nextGrid[i] = (n8 === 3 || n8 === 6) ? 1 : 0;
         }
     }
 
-    // Phase 2: Commit next state and update visual color intensity
+    // Phase 2: Apply next generation and update visual intensity in one pass
     grid.set(nextGrid);
 
-    for (let y = 0; y < GRID_ROWS; y++) {
-        for (let x = 0; x < GRID_COLS; x++) {
-            const idx = y * GRID_COLS + x;
-            if (grid[idx] === 1) {
-                activeCells++;
-                const n4 = countNeighbors4(x, y);
-                // Alive: Intensity scales from 40% to 100% based on 4-neighbors
-                colorGrid[idx] = 0.4 + (n4 * 0.15);
-            } else {
-                // Dead: Fade strength toward zero
-                colorGrid[idx] = Math.max(0, colorGrid[idx] - FADE_RATE);
-            }
+    for (let i = 0; i < TOTAL_CELLS; i++) {
+        if (grid[i] === 1) {
+            activeCells++;
+            // Calculate 4-neighbor intensity
+            const base = i * 4;
+            let n4 = 0;
+            n4 += grid[n4Offsets[base]];
+            n4 += grid[n4Offsets[base + 1]];
+            n4 += grid[n4Offsets[base + 2]];
+            n4 += grid[n4Offsets[base + 3]];
+
+            colorGrid[i] = 0.4 + (n4 * 0.15);
+        } else if (colorGrid[i] > 0) {
+            colorGrid[i] = Math.max(0, colorGrid[i] - FADE_RATE);
         }
     }
 
@@ -219,8 +226,11 @@ function draw() {
     const cellH = height / GRID_ROWS;
 
     for (let y = 0; y < GRID_ROWS; y++) {
+        const yOffset = y * GRID_COLS;
+        const dy = y * cellH + 0.5;
+
         for (let x = 0; x < GRID_COLS; x++) {
-            const intensity = colorGrid[y * GRID_COLS + x];
+            const intensity = colorGrid[yOffset + x];
             if (intensity > 0.01) {
                 // Scale lightness from brand gold (50%) up to a bright gold (85%), avoiding pure white
                 const lightness = 50 + (intensity * 35);
@@ -228,7 +238,7 @@ function draw() {
                 const saturation = 100 - (intensity * 20);
 
                 ctx.fillStyle = `hsl(${colors.yellow.h}, ${saturation}%, ${lightness}%)`;
-                ctx.fillRect(x * cellW + 0.5, y * cellH + 0.5, cellW - 0.5, cellH - 0.5);
+                ctx.fillRect(x * cellW + 0.5, dy, cellW - 0.5, cellH - 0.5);
             }
         }
     }
