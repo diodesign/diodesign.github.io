@@ -165,5 +165,14 @@ def main():
     build_log_pages('work-log.yaml', 'Work Log', 'Chronicles of engineering and research', 'work-log')
     build_log_pages('life-log.yaml', 'Life Log', 'Personal updates and musings', 'life-log')
 
+    # Start server if requested
+    if '--server' in sys.argv:
+        print("\nBuild successful. Starting server on port 8000...")
+        try:
+            # Using -m http.server for simplicity
+            subprocess.run([sys.executable, "-m", "http.server", "8000"])
+        except KeyboardInterrupt:
+            print("\nServer stopped.")
+
 if __name__ == '__main__':
     main()

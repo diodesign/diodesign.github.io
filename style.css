@@ -76,7 +76,7 @@ footer {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 0 0 4rem 0;
+    padding: 0 0 1rem 0;
     /* Added bottom padding for text breathing room */
     overflow: hidden;
     background: var(--bg-color);
