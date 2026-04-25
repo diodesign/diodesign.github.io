@@ -206,9 +206,23 @@ function draw() {
     }
 }
 
+let isVisible = true;
+let isTabActive = true;
+
+const observer = new IntersectionObserver((entries) => {
+    isVisible = entries[0].isIntersecting;
+}, { threshold: 0.1 });
+observer.observe(canvas);
+
+document.addEventListener('visibilitychange', () => {
+    isTabActive = document.visibilityState === 'visible';
+});
+
 function animate(time) {
-    update(time);
-    draw();
+    if (isVisible && isTabActive) {
+        update(time);
+        draw();
+    }
     requestAnimationFrame(animate);
 }
 
