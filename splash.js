@@ -86,19 +86,28 @@ function resetGrid() {
     }
 }
 
-function sprinkle() {
-    // Sprinkle 2x2 blocks to ensure they don't die immediately
-    const amount = 8 + Math.floor(Math.random() * 8);
-    for (let i = 0; i < amount; i++) {
-        const startX = Math.floor(Math.random() * (GRID_COLS - 1));
-        const startY = Math.floor(Math.random() * (GRID_ROWS - 1));
-        for (let dy = 0; dy < 2; dy++) {
-            for (let dx = 0; dx < 2; dx++) {
-                if (Math.random() > 0.2) { // Tiny bit of randomness
-                    grid[(startY + dy) * GRID_COLS + (startX + dx)] = 1;
-                }
+function fillCluster(gx, gy, size = 4) {
+    const startX = Math.floor(gx - size / 2);
+    const startY = Math.floor(gy - size / 2);
+    
+    for (let dy = 0; dy < size; dy++) {
+        for (let dx = 0; dx < size; dx++) {
+            const tx = (startX + dx + GRID_COLS) % GRID_COLS;
+            const ty = (startY + dy + GRID_ROWS) % GRID_ROWS;
+            // Random fill with ~50% density
+            if (Math.random() > 0.5) {
+                grid[ty * GRID_COLS + tx] = 1;
             }
         }
+    }
+}
+
+function sprinkle() {
+    const amount = 6 + Math.floor(Math.random() * 6);
+    for (let i = 0; i < amount; i++) {
+        const gx = Math.floor(Math.random() * GRID_COLS);
+        const gy = Math.floor(Math.random() * GRID_ROWS);
+        fillCluster(gx, gy, 4);
     }
 }
 
@@ -106,22 +115,7 @@ function fillAtMouse(e) {
     const rect = canvas.getBoundingClientRect();
     const mx = (e.clientX - rect.left) / width * GRID_COLS;
     const my = (e.clientY - rect.top) / height * GRID_ROWS;
-
-    const startX = Math.floor(mx - 1);
-    const startY = Math.floor(my - 1);
-
-    for (let dy = 0; dy < 2; dy++) {
-        for (let dx = 0; dx < 2; dx++) {
-            const gx = startX + dx;
-            const gy = startY + dy;
-            if (gx >= 0 && gx < GRID_COLS && gy >= 0 && gy < GRID_ROWS) {
-                // Randomly fill cells in this 2x2 block
-                if (Math.random() > 0.3) {
-                    grid[gy * GRID_COLS + gx] = 1;
-                }
-            }
-        }
-    }
+    fillCluster(mx, my, 4);
 }
 
 function countNeighbors(x, y) {
