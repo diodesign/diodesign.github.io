@@ -1,6 +1,6 @@
 ---
 title: "About the lab"
-subtitle: "Who's behind this place, how, and why"
+subtitle: "Shall we play a game?"
 ---
 
 Happily wandering off the beaten track to see what happens when you mix new programming environments, emerging designs, and a little too much curiosity. And a sprinkle of procrastination.

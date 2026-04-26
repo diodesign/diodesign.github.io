@@ -4,18 +4,39 @@ import sys
 import subprocess
 import shutil
 
-# Auto-setup: Ensure PyYAML is installed
-try:
-    import yaml
-except ImportError:
-    print("PyYAML not found. Attempting to install...")
-    try:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "PyYAML"])
-        import yaml
-        print("Successfully installed PyYAML.")
-    except Exception as e:
-        print(f"Error: Could not install PyYAML. Please run 'pip install PyYAML' manually.")
-        sys.exit(1)
+# Auto-setup: Ensure dependencies are installed
+def setup_dependencies():
+    deps = {
+        'yaml': 'PyYAML',
+        'frontmatter': 'python-frontmatter',
+        'markdown': 'markdown'
+    }
+    for module, package in deps.items():
+        try:
+            __import__(module)
+        except ImportError:
+            print(f"{package} not found. Attempting to install...")
+            try:
+                subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+                print(f"Successfully installed {package}.")
+            except Exception as e:
+                print(f"Error: Could not install {package}. Please run 'pip install {package}' manually.")
+                sys.exit(1)
+
+setup_dependencies()
+import yaml
+import frontmatter
+import markdown
+import http.server
+import socketserver
+
+class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
+    """Custom handler to disable browser caching during development."""
+    def end_headers(self):
+        self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+        self.send_header('Pragma', 'no-cache')
+        self.send_header('Expires', '0')
+        super().end_headers()
 
 # Configuration
 DATA_DIR = 'src/data'
@@ -24,9 +45,19 @@ OUTPUT_DIR = '.'
 LOG_ENTRIES_PER_PAGE = 5
 
 def load_data(filename):
+    """Loads YAML data from the data directory."""
     path = os.path.join(DATA_DIR, filename)
     with open(path, 'r') as f:
         return yaml.safe_load(f)
+
+def load_markdown(filename):
+    """Loads Markdown with frontmatter, returning metadata and rendered HTML content."""
+    path = os.path.join(DATA_DIR, filename)
+    with open(path, 'r') as f:
+        post = frontmatter.load(f)
+        metadata = post.metadata
+        metadata['content'] = markdown.markdown(post.content, extensions=['tables'])
+        return metadata
 
 def load_template(filename):
     with open(os.path.join(TEMPLATE_DIR, filename), 'r') as f:
@@ -64,17 +95,36 @@ def build_page(template_name, context, output_path):
         f.write(final_html)
     print(f"Built {output_path}")
 
-def build_log_pages(data_file, title, subtitle, folder_name):
-    entries = load_data(data_file)
-    entries.sort(key=lambda x: x['date'], reverse=True)
+def build_log_pages(data_subdir, title, subtitle, folder_name):
+    """
+    Builds log pages from a directory of Markdown files.
+    """
+    entries = []
+    log_dir = os.path.join(DATA_DIR, data_subdir)
+    
+    if os.path.exists(log_dir) and os.path.isdir(log_dir):
+        for filename in os.listdir(log_dir):
+            if filename.endswith('.md'):
+                path = os.path.join(log_dir, filename)
+                with open(path, 'r') as f:
+                    post = frontmatter.load(f)
+                    entry = post.metadata
+                    entry['content'] = markdown.markdown(post.content)
+                    # Fallback for permalink if not in frontmatter
+                    if 'permalink' not in entry:
+                        entry['permalink'] = filename.replace('.md', '.html')
+                    entries.append(entry)
+
+    # Sort entries by date (descending)
+    entries.sort(key=lambda x: str(x.get('date', '')), reverse=True)
     
     # Build individual entry pages
     for entry in entries:
         entry_context = {
-            'page_title': entry['title'],
-            'entry_title': entry['title'],
-            'entry_date': entry['date'],
-            'entry_byline': entry['byline'],
+            'page_title': entry.get('title', 'Untitled'),
+            'entry_title': entry.get('title', 'Untitled'),
+            'entry_date': entry.get('date', ''),
+            'entry_byline': entry.get('byline', ''),
             'entry_content': entry['content']
         }
         build_page('single_entry.html', entry_context, os.path.join(folder_name, entry['permalink']))
@@ -125,7 +175,7 @@ def prepare_output_directory():
             os.remove(os.path.join(OUTPUT_DIR, item))
     
     # Purge generated subdirectories to remove stale entries/pages
-    dirs_to_clean = ['about', 'contact', 'work-log', 'life-log']
+    dirs_to_clean = ['about', 'contact', 'work-log', 'life-log', 'contributors', 'license']
     for d in dirs_to_clean:
         dir_path = os.path.join(OUTPUT_DIR, d)
         if os.path.exists(dir_path):
@@ -135,13 +185,15 @@ def prepare_output_directory():
 def get_file_mtimes():
     """Returns a dict of filepath to mtime for all watched files."""
     mtimes = {}
-    ignore_dirs = {'.git', '__pycache__', 'about', 'contact', 'work-log', 'life-log'}
+    ignore_dirs = {'.git', '__pycache__', 'about', 'contact', 'work-log', 'life-log', 'contributors', 'license'}
     
     for root, dirs, files in os.walk('.'):
         dirs[:] = [d for d in dirs if d not in ignore_dirs]
         for f in files:
             if root == '.' and f.endswith('.html'):
                 continue
+            # Also ignore the src/data directories we're watching if they are output dirs? 
+            # No, src/ is input.
             path = os.path.join(root, f)
             try:
                 mtimes[path] = os.path.getmtime(path)
@@ -158,7 +210,7 @@ def build_site():
     build_page('index.html', {'page_title': 'Home'}, 'index.html')
     
     # Build about page
-    about_data = load_data('about.yaml')
+    about_data = load_markdown('about.md')
     build_page('page.html', {
         'page_title': about_data['title'],
         'page_subtitle': about_data['subtitle'],
@@ -166,7 +218,7 @@ def build_site():
     }, 'about/index.html')
     
     # Build contact page
-    contact_data = load_data('contact.yaml')
+    contact_data = load_markdown('contact.md')
     build_page('page.html', {
         'page_title': contact_data['title'],
         'page_subtitle': contact_data['subtitle'],
@@ -174,10 +226,46 @@ def build_site():
     }, 'contact/index.html')
     
     # Build logs
-    build_log_pages('work-log.yaml', 'Work Log', 'Chronicles of engineering and research', 'work-log')
-    build_log_pages('life-log.yaml', 'Life Log', 'Personal updates and musings', 'life-log')
+    build_log_pages('work-log', 'Work Log', 'Debugging the universe, one line at a time', 'work-log')
+    build_log_pages('life-log', 'Life Log', 'Mostly harmless', 'life-log')
+
+    # Build legal and contributor pages
+    contrib_data = load_markdown('contributors.md')
+    build_page('page.html', {
+        'page_title': contrib_data['title'],
+        'page_subtitle': contrib_data['subtitle'],
+        'page_content': contrib_data['content']
+    }, 'contributors/index.html')
+
+    license_data = load_markdown('license.md')
+    build_page('page.html', {
+        'page_title': license_data['title'],
+        'page_subtitle': license_data['subtitle'],
+        'page_content': license_data['content']
+    }, 'license/index.html')
 
 def main():
+    # Handle internal server flag used for development
+    if len(sys.argv) > 1 and sys.argv[1] == '--internal-server':
+        port = 8000
+        print(f"Starting internal dev server on port {port} (cache disabled)...")
+        
+        # Aggressively clear the port if it's already in use
+        try:
+            subprocess.run(['fuser', '-k', f'{port}/tcp'], capture_output=True)
+            import time
+            time.sleep(0.2) # Give the OS a moment to release the socket
+        except:
+            pass
+
+        socketserver.TCPServer.allow_reuse_address = True
+        with socketserver.TCPServer(("", port), NoCacheHandler) as httpd:
+            try:
+                httpd.serve_forever()
+            except KeyboardInterrupt:
+                pass
+        return
+
     # Handle standalone --clear flag
     if len(sys.argv) > 1 and sys.argv[1] == '--clear':
         prepare_output_directory()
@@ -190,13 +278,14 @@ def main():
     if '--server' in sys.argv:
         import time
         print("\nBuild successful. Starting server on port 8000...")
-        server_process = subprocess.Popen([sys.executable, "-m", "http.server", "8000"])
+        # Use our own script to run the internal server with cache disabled
+        server_process = subprocess.Popen([sys.executable, sys.argv[0], "--internal-server"])
         
         last_mtimes = get_file_mtimes()
         
         try:
             while True:
-                time.sleep(1)
+                time.sleep(0.5) # snappier polling
                 current_mtimes = get_file_mtimes()
                 
                 changed = False
@@ -204,6 +293,14 @@ def main():
                     if path not in last_mtimes or mtime > last_mtimes[path]:
                         changed = True
                         print(f"\nFile changed: {path}")
+                        
+                        # If build.py itself changed, restart the whole script
+                        if os.path.basename(path) == 'build.py':
+                            print("build.py changed. Restarting script...")
+                            server_process.terminate()
+                            server_process.wait()
+                            os.execv(sys.executable, [sys.executable] + sys.argv)
+                        
                         break
                         
                 if not changed:
@@ -222,7 +319,7 @@ def main():
                     build_site()
                     
                     print("Restarting server on port 8000...")
-                    server_process = subprocess.Popen([sys.executable, "-m", "http.server", "8000"])
+                    server_process = subprocess.Popen([sys.executable, sys.argv[0], "--internal-server"])
                     
                     last_mtimes = get_file_mtimes()
                     

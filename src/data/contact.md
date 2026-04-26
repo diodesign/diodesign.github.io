@@ -1,11 +1,19 @@
 ---
-title: "Contact Me"
-subtitle: "Get in touch or follow my work"
+title: "Contact the lab"
+subtitle: "Hailing frequencies open"
 ---
 
-Feel free to reach out via any of the following platforms:
+It's always cool to hear from those who've found our work useful, whether it's a simple note to say thanks, a question, a suggestion, or an offer to collaborate. Here's how to do that.
 
-* **Bluesky:** [@diodesign.org](https://bsky.app/profile/diodesign.org)
-* **LinkedIn:** [Chris Williams](https://www.linkedin.com/in/diodesign/)
-* **Keybase:** [diodesign](https://keybase.io/diodesign)
-* **GitHub:** [diodesign](https://github.com/diodesign)
+## Chris Williams
+
+To contact or connect with Chris, use one of the following methods:
+
+| Platform         | Link                                                |
+|------------------|-----------------------------------------------------|
+| Email            | [chrisw@diosix.org](mailto:chrisw@diosix.org) |
+| Bluesky          | [@diodesign.org](https://bsky.app/profile/diodesign.org) |
+| LinkedIn         | [Chris Williams](https://www.linkedin.com/in/diodesign/) |
+| Keybase          | [diodesign](https://keybase.io/diodesign) |
+| GitHub           | [diodesign](https://github.com/diodesign) |
+

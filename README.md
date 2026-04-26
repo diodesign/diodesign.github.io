@@ -1,22 +1,22 @@
 # diodesign.github.io CMS
 
-This repository contains a lightweight, Python-powered static site generator as well as site content. It is used to build the diodesign.org website, which is kindly hosted by GitHub pages.
+This repository contains a lightweight, Python-powered static site generator as well as site content. It builds the diodesign.org website, which is kindly hosted by GitHub pages.
 
 ## Architecture
 
-- [`src/data/`](src/data/): Content stored in human-friendly YAML files.
+- [`src/data/`](src/data/): Content stored in human-friendly Markdown files with YAML frontmatter.
 - [`src/templates/`](src/templates/): HTML templates with simple `{{ variable }}` placeholders.
-- [`build.py`](build.py): The build script that assembles the YAML data and HTML templates into final static pages.
+- [`build.py`](build.py): The build script that assembles the Markdown data and HTML templates into final static pages.
 
 ## Setup
 
-The build script to generate the site requires **Python 3** and **PyYAML**.  To install the dependencies, run the following command:
+The build script to generate the site requires **Python 3**, **PyYAML**, **python-frontmatter**, and **markdown**. To install the dependencies, run the following command:
 
 ```bash
 pip install -r requirements.txt
 ```
   
-[build.py](build.py) will attempt to install PyYAML automatically if it is missing.
+[build.py](build.py) will attempt to install these dependencies automatically if they are missing.
 
 ## Build and test
 
@@ -74,4 +74,4 @@ To add a new entry to the Work Log or Life Log, simply add a new item to the lis
 
 -----
 
-See [CONTRIBUTORS](contributors.md) for copyright and [LICENSE](lICENSE.md) for terms and conditions of use.
+See [CONTRIBUTORS](data/contributors.md) for copyright and [LICENSE](data/license.md) for terms and conditions of use.

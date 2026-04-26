@@ -1,0 +1,24 @@
+---
+title: "Contributors"
+subtitle: "We fight for the users!"
+---
+
+## Copyright
+
+All material on the [diodesign.org website](https://diodesign.org/) and in its [source code repository](https://github.com/diodesign/diodesign.github.io) is:
+
+*   Copyright &copy; 2026 Chris Williams.
+
+To learn how we build the website from its source code repository, see the [README](https://github.com/diodesign/diodesign.github.io/blob/prod/README).
+
+## Contributing to the lab
+
+We push boundaries through collaboration. If you want to help out, we'd love to hear from you.
+
+### Website and CMS
+
+If you'd like to contribute to the lab website or its build system, send an [email to Chris](/contact/). Our [licensing terms](/license/) govern all contributions to the website. While you retain copyright of your work, we share your contributions under these terms to keep the lab open for everyone.
+
+### Lab projects
+
+To contribute to an existing project, refer to that project's contribution guidelines and licensing. If you have an idea for a new project, send an [email to Chris](/contact/) with your proposal.
