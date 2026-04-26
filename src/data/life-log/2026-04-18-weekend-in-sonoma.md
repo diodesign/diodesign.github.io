@@ -1,0 +1,8 @@
+---
+title: "Weekend in Sonoma"
+date: "2026-04-18"
+byline: "Chris Williams"
+permalink: "life-log-sonoma.html"
+---
+
+Had a fantastic time exploring the vineyards in Sonoma. The weather was perfect for some outdoor photography.

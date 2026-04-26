@@ -1,0 +1,8 @@
+---
+title: "Migrating Diosix to Zig"
+date: "2026-04-15"
+byline: "Chris Williams"
+permalink: "work-log-zig-migration.html"
+---
+
+I've decided to move the entire Diosix hypervisor codebase from C and Assembly to Zig. The type safety and modern build system are game changers for bare-metal development.
