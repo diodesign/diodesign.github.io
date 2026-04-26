@@ -132,13 +132,25 @@ def prepare_output_directory():
             print(f"Cleaning {d}/...")
             shutil.rmtree(dir_path)
 
-def main():
-    # Handle standalone --clear flag
-    if len(sys.argv) > 1 and sys.argv[1] == '--clear':
-        prepare_output_directory()
-        print("Generated files cleared.")
-        return
+def get_file_mtimes():
+    """Returns a dict of filepath to mtime for all watched files."""
+    mtimes = {}
+    ignore_dirs = {'.git', '__pycache__', 'about', 'contact', 'work-log', 'life-log'}
+    
+    for root, dirs, files in os.walk('.'):
+        dirs[:] = [d for d in dirs if d not in ignore_dirs]
+        for f in files:
+            if root == '.' and f.endswith('.html'):
+                continue
+            path = os.path.join(root, f)
+            try:
+                mtimes[path] = os.path.getmtime(path)
+            except OSError:
+                pass
+    return mtimes
 
+def build_site():
+    """Performs the complete site build."""
     # Prepare for a fresh build
     prepare_output_directory()
 
@@ -165,14 +177,59 @@ def main():
     build_log_pages('work-log.yaml', 'Work Log', 'Chronicles of engineering and research', 'work-log')
     build_log_pages('life-log.yaml', 'Life Log', 'Personal updates and musings', 'life-log')
 
+def main():
+    # Handle standalone --clear flag
+    if len(sys.argv) > 1 and sys.argv[1] == '--clear':
+        prepare_output_directory()
+        print("Generated files cleared.")
+        return
+
+    build_site()
+
     # Start server if requested
     if '--server' in sys.argv:
+        import time
         print("\nBuild successful. Starting server on port 8000...")
+        server_process = subprocess.Popen([sys.executable, "-m", "http.server", "8000"])
+        
+        last_mtimes = get_file_mtimes()
+        
         try:
-            # Using -m http.server for simplicity
-            subprocess.run([sys.executable, "-m", "http.server", "8000"])
+            while True:
+                time.sleep(1)
+                current_mtimes = get_file_mtimes()
+                
+                changed = False
+                for path, mtime in current_mtimes.items():
+                    if path not in last_mtimes or mtime > last_mtimes[path]:
+                        changed = True
+                        print(f"\nFile changed: {path}")
+                        break
+                        
+                if not changed:
+                    for path in last_mtimes:
+                        if path not in current_mtimes:
+                            changed = True
+                            print(f"\nFile deleted: {path}")
+                            break
+                            
+                if changed:
+                    print("Killing server...")
+                    server_process.terminate()
+                    server_process.wait()
+                    
+                    print("Rebuilding site...")
+                    build_site()
+                    
+                    print("Restarting server on port 8000...")
+                    server_process = subprocess.Popen([sys.executable, "-m", "http.server", "8000"])
+                    
+                    last_mtimes = get_file_mtimes()
+                    
         except KeyboardInterrupt:
             print("\nServer stopped.")
+            server_process.terminate()
+            server_process.wait()
 
 if __name__ == '__main__':
     main()

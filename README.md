@@ -1,42 +1,44 @@
 # diodesign.github.io CMS
 
-A lightweight, Python-powered static site generator for the diodesign website.
+This repository contains a lightweight, Python-powered static site generator as well as site content. It is used to build the diodesign.org website, which is kindly hosted by GitHub pages.
 
 ## Architecture
 
-- **src/data/**: Content stored in human-friendly YAML files.
-- **src/templates/**: HTML templates with simple `{{ variable }}` placeholders.
-- **build.py**: The build script that assembles the YAML data and HTML templates into final static pages.
+- [`src/data/`](src/data/): Content stored in human-friendly YAML files.
+- [`src/templates/`](src/templates/): HTML templates with simple `{{ variable }}` placeholders.
+- [`build.py`](build.py): The build script that assembles the YAML data and HTML templates into final static pages.
 
 ## Setup
 
-The build script requires **Python 3** and **PyYAML**.  To install the dependencies, run the following command:
+The build script to generate the site requires **Python 3** and **PyYAML**.  To install the dependencies, run the following command:
 
 ```bash
 pip install -r requirements.txt
 ```
   
-`build.py` will attempt to install PyYAML automatically if it is missing.
+[build.py](build.py) will attempt to install PyYAML automatically if it is missing.
 
 ## Build and test
 
-1. **Build the site.**
-   ```bash
-   python3 build.py
-   ```
+1.  To build static pages from the current content:
 
-2. **Clear generated files.**
-   To remove all auto-generated pages without rebuilding:
-   ```bash
-   python3 build.py --clear
-   ```
+    ```bash
+    python3 build.py
+    ```
 
-3. **Run a local server.**
-   Since the site uses absolute paths, you must use a server for local testing:
-   ```bash
-   python3 -m http.server 8000
-   ```
-   Then visit [http://localhost:8000](http://localhost:8000).
+2.  Since the site uses root-relative paths, you must use a server for local testing. To run a development server:
+
+    ```bash
+    python3 build.py --server
+    ```
+
+    Then visit [http://localhost:8000](http://localhost:8000). While the server is running, if any files in the current directory are modified, the site will be rebuilt automatically.
+
+3.  To remove all auto-generated pages prior to committing changes:
+
+    ```bash
+    python3 build.py --clear
+    ```
 
 ## CI/CD deployment
 
@@ -72,5 +74,4 @@ To add a new entry to the Work Log or Life Log, simply add a new item to the lis
 
 -----
 
-The contents of this repository are copyright (c) 2026 Chris Williams <[chrisw@diosix.org](mailto:chrisw@diosix.org)>.
-Licensed under the [CC BY-SA 4.0 License](https://creativecommons.org/licenses/by-sa/4.0/).
+See [CONTRIBUTORS](contributors.md) for copyright and [LICENSE](lICENSE.md) for terms and conditions of use.
