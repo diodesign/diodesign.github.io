@@ -1,0 +1,14 @@
+# Auto-generated site content
+/about/
+/contact/
+/work-log/
+/life-log/
+/*.html
+
+# Python
+__pycache__/
+*.py[cod]
+
+# OS junk
+.DS_Store
+Thumbs.db
