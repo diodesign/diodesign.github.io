@@ -39,8 +39,6 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # IMPORTANT: Replace '_site' with the folder your build.py generates
-          # (e.g., 'public', 'dist', or './' if it builds in the root)
           path: './_site'
 
   deploy:

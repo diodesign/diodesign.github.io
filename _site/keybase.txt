@@ -1,0 +1,81 @@
+==================================================================
+https://keybase.io/diodesign
+--------------------------------------------------------------------
+
+I hereby claim:
+
+  * I am an admin of https://diodesign.org
+  * I am diodesign (https://keybase.io/diodesign) on keybase.
+  * I have a public key with fingerprint DAF2 7123 C337 66CA 9025  5FD2 6434 9BFB FC32 BC60
+
+To do so, I am signing this object:
+
+{
+  "body": {
+    "key": {
+      "eldest_kid": "0101042fc3c77f1d9df6da9931b77640596cecdcdab189017dae5931e859186702200a",
+      "fingerprint": "daf27123c33766ca90255fd264349bfbfc32bc60",
+      "host": "keybase.io",
+      "key_id": "64349bfbfc32bc60",
+      "kid": "0101042fc3c77f1d9df6da9931b77640596cecdcdab189017dae5931e859186702200a",
+      "uid": "eaf9ecc7fb4c0418a43f1fc52d5fc000",
+      "username": "diodesign"
+    },
+    "merkle_root": {
+      "ctime": 1733648183,
+      "hash_meta": "a74bfb5d364455cf2308a6e1648f183ebfc7ca3567c97f8c6bc9d2de43772bb5",
+      "seqno": 26360206
+    },
+    "revoke": {
+      "sig_ids": [
+        "7aadaf3cb17cdfa9d3ca08681ede13d0cdb33ada360ae044be02c36ce907ed660f"
+      ]
+    },
+    "service": {
+      "hostname": "diodesign.org",
+      "protocol": "https:"
+    },
+    "type": "web_service_binding",
+    "version": 1
+  },
+  "ctime": 1733648275,
+  "expire_in": 157680000,
+  "prev": "91870903a71279b0e1500c828c981df49c7a7384ce5f2b4845b191dc3ff4787d",
+  "seqno": 22,
+  "tag": "signature"
+}
+
+which yields the signature:
+
+-----BEGIN PGP MESSAGE-----
+Version: Keybase OpenPGP v2.1.13
+Comment: https://keybase.io/crypto
+
+yMK4AnicrVNbaBxVGN4YL23wRomXCl4Y81RjPJc558zZIF4qiVakIkSxaR3PdXdI
+dmc7M7vtWpMipNY+CLUGk6JQqLQV0zYqVqkXKE2xtY3Uh1pUsEURtaAWTR+k6OqZ
+oKDio8zDMPN///d9//efc+iy9kJH26UPrj8r1zx+rO3YwWa9UBoIn1/nyVg3veI6
+b8jMv8ywNmkWDkXaK3oAusdHVmHFmIWaa0u14BxDyRj1AeFUGaWVFhIGHECmhSGu
+agLCYUAZQAgA4XV7NqqWTFJLomrmaLWwiEGEFcaMUiU4QIRYjaiPfS6tdHpIKgpc
+YzlO8w5nTorU9ESx++c+wnl7/4H/n33X5+mMsNwoxaz0FfBhIHxsoVUEaWIVALlu
+PTVJVVRMPl0UuwijUtUb6fYqJhkaNmESx1mersqiHAMZxtQPYIDdhCIthxWTCdcq
+mO/GIdoVfUKURRgEghrosNaBjZuUKYEJZYozGygqFddIGx8zhqQkzkhqVldjr4go
+pgAB6iwkphEPmVzdmXLBpV5x0GNCuC1gJSFT2gqusRIgoAE02kCsgdISYwdxLMIA
+35cGIIVdahwwoykF1ls1kqsljUjNk+eb+ncCPXFScp5qSZzFKh52pXKW1dJinkzW
+rOXYNUaGf7KEMqpqd1BcR8MkaRRXXVIO+c/QECPdnllbixITRjmCMBq4JYBcxzQc
+pVshAxxg4c4Y4xIYSABQAQoUD6C2PldMMBz4yhCLpB/4REIOtcLW+ixg+m8pIudT
+lBxnPo3I6onxRg4eWHlhoa2jcPFFF+Q3qNCx8Mq/7tWW7JLf1578RJYbR3c2Dk8u
+XLC/9c1nP7Sf7zw3t+i3927dcWa8nOzfc//6qd6bj161GJrerjGOp5snW0+MjW98
+6IZnktd2fbl02+HZ6umXrx07t2xv/MbW99+skJloovXtO8um7/r0dPvqB3aMTvef
+2n68/VTlLP16gH7XWvTjaOvEpie3XLF4adfMXH3ip563Xn8Rh5t+7nx6as+J8/dt
++OiRJVsHv9h94zWv9H7f9/Ytz07Mesuv7/tgX/borz0D42Fpau++z++57u5KBm97
+d+WG258bXNLsuiOYufpI89XZyQWbRw+wm/rY5FN6xaFV2eUfH/nwpcf4wzvVnb+8
+sHtu4+bRXWe2Le/sx191rLj3eH+//gO92ofH
+=hXty
+-----END PGP MESSAGE-----
+
+And finally, I am proving ownership of this host by posting or
+appending to this document.
+
+View my publicly-auditable identity here: https://keybase.io/diodesign
+
+==================================================================

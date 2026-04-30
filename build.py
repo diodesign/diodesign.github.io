@@ -41,7 +41,7 @@ class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
 # Configuration
 DATA_DIR = 'src/data'
 TEMPLATE_DIR = 'src/templates'
-OUTPUT_DIR = '.'
+OUTPUT_DIR = '_site'
 LOG_ENTRIES_PER_PAGE = 5
 
 def load_data(filename):
@@ -169,18 +169,10 @@ def build_log_pages(data_subdir, title, subtitle, folder_name):
 
 def prepare_output_directory():
     """Removes old generated files and directories to ensure a clean build."""
-    # Clean root .html files
-    for item in os.listdir(OUTPUT_DIR):
-        if item.endswith('.html'):
-            os.remove(os.path.join(OUTPUT_DIR, item))
-    
-    # Purge generated subdirectories to remove stale entries/pages
-    dirs_to_clean = ['about', 'contact', 'work-log', 'life-log', 'contributors', 'license', 'privacy']
-    for d in dirs_to_clean:
-        dir_path = os.path.join(OUTPUT_DIR, d)
-        if os.path.exists(dir_path):
-            print(f"Cleaning {d}/...")
-            shutil.rmtree(dir_path)
+    if os.path.exists(OUTPUT_DIR):
+        print(f"Cleaning {OUTPUT_DIR}/...")
+        shutil.rmtree(OUTPUT_DIR)
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 def get_file_mtimes():
     """Returns a dict of filepath to mtime for all source files being watched."""
@@ -255,6 +247,13 @@ def build_site():
         'page_content': privacy_data['content']
     }, 'privacy/index.html')
 
+    # Copy static assets
+    static_assets = ['style.css', 'splash.js', 'favicon.ico', 'CNAME', 'keybase.txt']
+    for asset in static_assets:
+        if os.path.exists(asset):
+            shutil.copy2(asset, os.path.join(OUTPUT_DIR, asset))
+            print(f"Copied {asset} to {OUTPUT_DIR}")
+
 def main():
     # Handle internal server flag used for development
     if len(sys.argv) > 1 and sys.argv[1] == '--internal-server':
@@ -270,7 +269,9 @@ def main():
             pass
 
         socketserver.TCPServer.allow_reuse_address = True
-        with socketserver.TCPServer(("", port), NoCacheHandler) as httpd:
+        import functools
+        handler = functools.partial(NoCacheHandler, directory=OUTPUT_DIR)
+        with socketserver.TCPServer(("", port), handler) as httpd:
             try:
                 httpd.serve_forever()
             except KeyboardInterrupt:
