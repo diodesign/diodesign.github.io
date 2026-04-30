@@ -6,6 +6,7 @@ This repository contains a lightweight, Python-powered static site generator as 
 
 - [`src/data/`](src/data/): Content stored in human-friendly Markdown files with YAML frontmatter.
 - [`src/templates/`](src/templates/): HTML templates with simple `{{ variable }}` placeholders.
+- [`_site/`](_site/): The output directory where the built static site is generated. This directory is ignored by git.
 - [`build.py`](build.py): The build script that assembles the Markdown data and HTML templates into final static pages.
 
 ## Setup
@@ -32,7 +33,7 @@ pip install -r requirements.txt
     python3 build.py --server
     ```
 
-    Then visit [http://localhost:8000](http://localhost:8000). The server will monitor the source files and automatically rebuild the site whenever changes are detected, allowing for a seamless development experience.
+    Then visit [http://localhost:8000](http://localhost:8000). The server will serve from the `_site/` directory, monitor the source files, and automatically rebuild the site whenever changes are detected, allowing for a seamless development experience.
 
 3.  To remove all auto-generated pages prior to committing changes:
 
@@ -44,8 +45,8 @@ pip install -r requirements.txt
 
 This repository includes a GitHub Actions workflow in `.github/workflows/deploy.yml`. When you push to the `prod` branch, GitHub will automatically:
 1. Setup a Python environment.
-2. Run `build.py` to generate the latest site.
-3. Deploy the resulting files to GitHub Pages.
+2. Run `build.py` to generate the latest site into `_site/`.
+3. Deploy the contents of the `_site/` folder to GitHub Pages.
 
 ## Managing content
 
