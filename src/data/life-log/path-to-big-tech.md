@@ -7,9 +7,9 @@ permalink: "path-to-big-tech.html"
 
 Right off the bat, I want to say I don't speak for Google in any way, shape, or form. I'm just a guy who has a keyboard, an internet connection, and some opinions.
 
-It's been so peculiar working on the inside after spending years on the outside looking in as a journalist and editor, especially before, during, and after the incredible spectacle that was [Google Cloud Next 2026](https://blog.google/innovation-and-ai/infrastructure-and-cloud/google-cloud/next-2026/).
+It’s been so peculiar working on the inside after years of looking in as a journalist, especially during the spectacle of [Google Cloud Next 2026](https://blog.google/innovation-and-ai/infrastructure-and-cloud/google-cloud/next-2026/).
 
-And I mean that in a good way. Call me biased, but Google is a fantastic place to work, with so many smart people working on so many planet-scale problems. I've only been here just shy of a year, and I'm learning so much.
+I mean that in the best way possible. Call me biased, and you should, but Google is a fantastic place to be; there are so many smart people tackling planet-scale problems. I’ve been here just shy of a year, and the learning curve is still vertical.
 
 I took a rather circuitous route to get here. I graduated in the UK with a master's degree in electronics engineering, could write code as well as design circuits, and did some work in the embedded space. But being young and impatient, I caught the journalism bug and left hardware design behind. The website I built for my university's student newspaper [won a national award](https://en.wikipedia.org/wiki/The_Boar_(newspaper)#2000s), I edited the [_Drobe_ website](https://en.wikipedia.org/wiki/Drobe) that covered Arm systems before they were cool, and I worked in newspapers as a reporter and then as a production journalist laying out pages including special editions covering the 2011 England riots.
 
