@@ -31,4 +31,4 @@ To contribute to an existing project, refer to that project's contribution guide
 
 ## Website source code
 
-The website is built from its source code repository. To learn how, see the [README](https://github.com/diodesign/diodesign.github.io/blob/prod/README).
+The website is built from its source code repository. To learn how, see the [README](https://github.com/diodesign/diodesign.github.io/blob/prod/README.md).
