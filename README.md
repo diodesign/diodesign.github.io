@@ -32,7 +32,7 @@ pip install -r requirements.txt
     python3 build.py --server
     ```
 
-    Then visit [http://localhost:8000](http://localhost:8000). While the server is running, if any files in the current directory are modified, the site will be rebuilt automatically.
+    Then visit [http://localhost:8000](http://localhost:8000). The server will monitor the source files and automatically rebuild the site whenever changes are detected, allowing for a seamless development experience.
 
 3.  To remove all auto-generated pages prior to committing changes:
 
@@ -51,27 +51,24 @@ This repository includes a GitHub Actions workflow in `.github/workflows/deploy.
 
 ### Adding and editing content pages
 
-Edit the `.yaml` files in `src/data/`. 
-
-- For multi-line HTML content, use the YAML pipe operator (`|`):
-  ```yaml
-  content: |
-    <p>This is a paragraph.</p>
-    <p>This is another.</p>
-  ```
+Edit the `.md` files in `src/data/`. These files use YAML frontmatter for metadata (title, subtitle, etc.) and Markdown for the page body.
 
 ### Adding log entries
 
-To add a new entry to the Work Log or Life Log, simply add a new item to the list in `work-log.yaml` or `life-log.yaml`. The build script will automatically handle sorting (by date) and pagination.
+To add a new entry to the Work Log or Life Log, create a new `.md` file in `src/data/work-log/` or `src/data/life-log/`. The build script will automatically handle sorting (by date) and pagination based on the metadata in each file.
 
-```yaml
-- title: "My New Entry"
-  date: "2026-04-20"
-  byline: "Chris Williams"
-  permalink: "my-new-entry.html"
-  content: "This is the content of my log entry."
+Example entry file:
+```markdown
+---
+title: "My New Entry"
+date: "2026-04-20"
+byline: "Chris Williams"
+permalink: "my-new-entry.html"
+---
+
+This is the content of my log entry in Markdown.
 ```
 
 -----
 
-See [CONTRIBUTORS](data/contributors.md) for copyright and [LICENSE](data/license.md) for terms and conditions of use.
+See [CONTRIBUTORS](src/data/contributors.md) for copyright and [LICENSE](src/data/license.md) for terms and conditions of use.

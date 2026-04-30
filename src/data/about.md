@@ -3,24 +3,20 @@ title: "About the lab"
 subtitle: "Shall we play a game?"
 ---
 
-Happily wandering off the beaten track to see what happens when you mix new programming environments, emerging designs, and a little too much curiosity. And a sprinkle of procrastination.
+## Ongoing projects
 
-Greetings, programs. I'm Chris Williams.
+Here in the lab, we wander off the beaten track to see what happens when we mix new programming environments, self-organizing stacks, and a little too much curiosity. And sometimes we release those experiments into the wild for others to use or build upon.
 
-By day, I'm a technical editor at [Google Cloud](https://cloud.google.com/) in San Francisco.
+Our current public projects include:
 
-For fun, I develop [diosix](https://diosix.org/), a RISC-V bare-metal hypervisor I'm rewriting in Zig.
+| Project | Description |
+|---------|-------------|
+| [Diosix](https://diosix.org/) | A lightweight, bare-metal multiprocessor hypervisor written in Zig that focuses on providing a secure, distributed foundation for isolating RISC-V workloads within a minimalist trusted computing base. | 
 
-You can find other programming projects I'm toying with [here](https://github.com/diodesign?tab=repositories). I also like to doodle little fun bits of JavaScript [here](https://editor.p5js.org/diodesign/sketches).
+## People
 
-I am personally interested in open hardware and processor design, novel operating systems and hypervisors, and computer security.
+| Person | Background |
+|---------|-------------|
+| [Chris Williams](/contact/) | A San Francisco-based technical editor in [Google Cloud](https://cloud.google.com/) with over 20 years of experience in professional publishing and open-source systems engineering. |
 
-You can find me on [Bluesky](https://bsky.app/profile/diodesign.org), [LinkedIn](https://www.linkedin.com/in/diodesign/), and [Keybase](https://keybase.io/diodesign).
 
-Thanks for visiting.
-
-### Privacy information
-
-The [diodesign.org website](/) is served by GitHub Pages. As such, GitHub may collect [technical information](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement) about visitors.
-
-The website uses Google Fonts to serve fonts. As such, Google may [collect information](https://developers.google.com/fonts/faq/privacy) about visitors to the website.

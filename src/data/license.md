@@ -26,5 +26,5 @@ No warranties are given. The license may not give you all of the permissions nec
 ## Additional information
 
 *   For the full terms and conditions, see [the license legal code](https://creativecommons.org/licenses/by-sa/4.0/legalcode.en).
-*   For the material's contributors and copyright, see [Contributors](/contributors/).
+*   For the material's contributors, copyright, and limitations of liability, see [Contributors](/contributors/).
 *   The website's content is built from its source code repository. For more information on how the website is built, see the [README](https://github.com/diodesign/diodesign.github.io/blob/prod/README).

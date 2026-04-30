@@ -175,7 +175,7 @@ def prepare_output_directory():
             os.remove(os.path.join(OUTPUT_DIR, item))
     
     # Purge generated subdirectories to remove stale entries/pages
-    dirs_to_clean = ['about', 'contact', 'work-log', 'life-log', 'contributors', 'license']
+    dirs_to_clean = ['about', 'contact', 'work-log', 'life-log', 'contributors', 'license', 'privacy']
     for d in dirs_to_clean:
         dir_path = os.path.join(OUTPUT_DIR, d)
         if os.path.exists(dir_path):
@@ -183,20 +183,24 @@ def prepare_output_directory():
             shutil.rmtree(dir_path)
 
 def get_file_mtimes():
-    """Returns a dict of filepath to mtime for all watched files."""
+    """Returns a dict of filepath to mtime for all source files being watched."""
     mtimes = {}
-    ignore_dirs = {'.git', '__pycache__', 'about', 'contact', 'work-log', 'life-log', 'contributors', 'license'}
+    # Watch the src directory recursively
+    if os.path.exists('src'):
+        for root, dirs, files in os.walk('src'):
+            for f in files:
+                path = os.path.join(root, f)
+                try:
+                    mtimes[path] = os.path.getmtime(path)
+                except OSError:
+                    pass
     
-    for root, dirs, files in os.walk('.'):
-        dirs[:] = [d for d in dirs if d not in ignore_dirs]
-        for f in files:
-            if root == '.' and f.endswith('.html'):
-                continue
-            # Also ignore the src/data directories we're watching if they are output dirs? 
-            # No, src/ is input.
-            path = os.path.join(root, f)
+    # Also watch specific root files that affect the build or appearance
+    root_watches = ['build.py', 'style.css', 'splash.js']
+    for f in root_watches:
+        if os.path.exists(f):
             try:
-                mtimes[path] = os.path.getmtime(path)
+                mtimes[f] = os.path.getmtime(f)
             except OSError:
                 pass
     return mtimes
@@ -243,6 +247,13 @@ def build_site():
         'page_subtitle': license_data['subtitle'],
         'page_content': license_data['content']
     }, 'license/index.html')
+
+    privacy_data = load_markdown('privacy.md')
+    build_page('page.html', {
+        'page_title': privacy_data['title'],
+        'page_subtitle': privacy_data['subtitle'],
+        'page_content': privacy_data['content']
+    }, 'privacy/index.html')
 
 def main():
     # Handle internal server flag used for development
@@ -316,7 +327,11 @@ def main():
                     server_process.wait()
                     
                     print("Rebuilding site...")
-                    build_site()
+                    try:
+                        build_site()
+                        print("Build successful.")
+                    except Exception as e:
+                        print(f"Build failed: {e}")
                     
                     print("Restarting server on port 8000...")
                     server_process = subprocess.Popen([sys.executable, sys.argv[0], "--internal-server"])
