@@ -13,7 +13,7 @@ While we do not collect data, we use third-party infrastructure to host and serv
 *   **Google Fonts:** We use Google Fonts for typography. Google may collect information about visitors as part of providing this service. Please refer to the [Google Privacy Policy](https://policies.google.com/privacy).
 *   **No tracking:** We do not use cookies, tracking pixels, or first-party analytics on this website.
 
-## AI Features
+## AI features
 
 When available, all queries and processing for the [ask the lab](/) feature are performed locally on your device using your browser's [Prompt API](https://developer.chrome.com/docs/ai/prompt-api). Your questions and answers never leave your device and are not sent to any servers.
 
