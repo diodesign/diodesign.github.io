@@ -313,11 +313,65 @@ def build_site():
     }, 'privacy/index.html')
 
     # Copy static assets
-    static_assets = ['style.css', 'splash.js', 'favicon.ico', 'CNAME', 'keybase.txt']
+    static_assets = ['style.css', 'splash.js', 'search.js', 'favicon.ico', 'CNAME', 'keybase.txt']
     for asset in static_assets:
         if os.path.exists(asset):
             shutil.copy2(asset, os.path.join(OUTPUT_DIR, asset))
             print(f"Copied {asset} to {OUTPUT_DIR}")
+
+    # Build search index for AI
+    build_search_index()
+
+def build_search_index():
+    """Generates a search-index.json for client-side AI context."""
+    import json
+    import re
+
+    index = []
+    
+    # Process regular pages
+    pages = ['about.md', 'contact.md', 'contributors.md', 'license.md', 'privacy.md']
+    for page_file in pages:
+        path = os.path.join(DATA_DIR, page_file)
+        if os.path.exists(path):
+            with open(path, 'r') as f:
+                post = frontmatter.load(f)
+                content = post.content
+                # Strip markdown links, bold, etc. (basic)
+                content = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', content)
+                content = re.sub(r'[*#_`]', '', content)
+                
+                name = page_file.replace('.md', '')
+                index.append({
+                    'title': post.metadata.get('title', name.capitalize()),
+                    'url': f'/{name}/',
+                    'content': content[:2000]
+                })
+
+    # Process logs
+    for log_dir, folder in [('work-log', 'work-log'), ('life-log', 'life-log')]:
+        full_log_dir = os.path.join(DATA_DIR, log_dir)
+        if os.path.exists(full_log_dir):
+            for filename in os.listdir(full_log_dir):
+                if filename.endswith('.md'):
+                    path = os.path.join(full_log_dir, filename)
+                    with open(path, 'r') as f:
+                        post = frontmatter.load(f)
+                        content = post.content
+                        content = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', content)
+                        content = re.sub(r'[*#_`]', '', content)
+                        
+                        permalink = post.metadata.get('permalink', filename.replace('.md', '.html'))
+                        index.append({
+                            'title': post.metadata.get('title', 'Untitled'),
+                            'url': f'/{folder}/{permalink}',
+                            'content': content[:2000]
+                        })
+
+    index_path = os.path.join(OUTPUT_DIR, 'search-index.json')
+    with open(index_path, 'w') as f:
+        json.dump(index, f, separators=(',', ':'))
+    print(f"Built search-index.json with {len(index)} entries")
 
 def main():
     # Handle internal server flag used for development
