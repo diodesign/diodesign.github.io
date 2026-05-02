@@ -7,7 +7,26 @@
         <p>
             Synthesizing silicon and intelligence through low-level systems experimentation.
         </p>
+        <div class="search-container" id="search-container">
+            <div class="search-box">
+                <div id="search-status-overlay" class="search-status-overlay" style="display: none;">
+                    <span>Lab AI is ready to download (approx. 4GB). Click here to initialize.</span>
+                </div>
+                <div class="search-inner">
+                    <input type="text" id="search-input" class="search-input" placeholder="Ask the lab anything..." autocomplete="off">
+                    <div id="search-results" class="search-results"></div>
+                </div>
+            </div>
+            <div id="search-cloud-fallback" class="cloud-fallback" style="display: none;">
+                Neural link stalled. <a href="https://www.google.com/">Use Cloud Search &rarr;</a>
+            </div>
+            <div id="search-reset" class="search-reset">
+                <a href="/">Ask another question &rarr;</a>
+            </div>
+        </div>
     </div>
 </div>
 
 <script src="/splash.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="/search.js"></script>

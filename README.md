@@ -1,6 +1,6 @@
 # diodesign.github.io CMS
 
-This repository contains a lightweight, Python-powered static site generator as well as site content. It builds the diodesign.org website, which is kindly hosted by GitHub pages.
+This repository contains a lightweight, Python-powered static site generator as well as site content. It builds the diodesign.org website, which is kindly hosted by GitHub Pages.
 
 ## Architecture
 

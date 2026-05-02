@@ -56,15 +56,14 @@ header {
 }
 
 main {
-    padding-bottom: 40px;
+    padding-bottom: 20px;
 }
 
 footer {
-    padding: 40px 0;
+    padding: 20px 0;
     text-align: center;
     font-size: 0.8rem;
     color: var(--muted-color);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Splash page */
@@ -166,7 +165,17 @@ footer {
 .page-header .subtitle {
     color: var(--highlight-color);
     font-weight: 300;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
+}
+
+.single-entry .page-header .subtitle {
+    font-size: 0.9rem;
+}
+
+.single-entry .page-header time {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--muted-color);
 }
 
 .content {
@@ -183,8 +192,8 @@ footer {
     margin-bottom: 1.25rem;
 }
 
-.content ul, .log-content ul, .log-content-full ul,
-.content ol, .log-content ol, .log-content-full ol {
+.content ul, .log-content ul, .log-content-full ul, .search-results ul,
+.content ol, .log-content ol, .log-content-full ol, .search-results ol {
     margin-bottom: 1.25rem;
     padding-left: 1.5rem;
 }
@@ -218,11 +227,16 @@ footer {
     font-weight: 700;
     color: var(--muted-color);
     margin-bottom: 5px;
+    font-size: 0.9rem;
 }
 
 .log-meta .byline {
-    font-size: 0.8rem;
     margin-bottom: 10px;
+    font-size: 0.9rem;
+}
+
+.log-meta .permalink {
+    font-size: 0.9rem;
 }
 
 .log-content {
@@ -294,4 +308,189 @@ th {
     text-transform: uppercase;
     font-size: 0.8rem;
     letter-spacing: 1px;
+}
+
+/* AI Search Box */
+.search-container {
+    display: none; /* Controlled by JS availability check */
+    margin: 2rem auto 0 auto;
+    width: 90%;
+    max-width: 550px;
+    position: relative;
+    z-index: 20;
+}
+
+.search-box {
+    position: relative;
+    padding: 1px; /* The border width */
+    border-radius: 13px;
+    background: rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+}
+
+/* The Gold Shine Border Effect */
+.search-box::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 200%; /* Large enough to cover the diagonal during rotation */
+    aspect-ratio: 1 / 1;
+    transform: translate(-50%, -50%);
+    background: conic-gradient(
+        from 0deg,
+        transparent 0%,
+        transparent 45%,
+        #D4AF37 50%,
+        transparent 55%,
+        transparent 100%
+    );
+    animation: gold-rotate 6s linear infinite;
+    z-index: -1;
+}
+
+@keyframes gold-rotate {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+.search-inner {
+    position: relative;
+    background: var(--bg-color);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+}
+
+.search-input {
+    background: transparent;
+    border: none;
+    color: var(--text-color);
+    font-family: 'Outfit', sans-serif;
+    font-size: 1rem;
+    padding: 15px 20px;
+    outline: none;
+    width: 100%;
+}
+
+.search-input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.search-results {
+    font-size: 0.95rem;
+    color: var(--text-color);
+    padding: 20px; /* Consistent padding on all sides */
+    display: none; /* Shown when results exist */
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: 0;
+    line-height: 1.6;
+}
+
+.search-results p {
+    margin-bottom: 1rem;
+}
+
+.search-results p:last-child {
+    margin-bottom: 0;
+}
+
+.search-box.complete::before {
+    animation-play-state: paused;
+    opacity: 0.3; /* Fade out the shine slightly when complete */
+    transition: opacity 1s ease;
+}
+
+.search-reset {
+    margin-top: 1.5rem;
+    text-align: center;
+    font-size: 0.85rem;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+.search-reset.visible {
+    opacity: 1;
+}
+
+.search-reset a {
+    color: var(--highlight-color);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 700;
+}
+
+/* Transition classes */
+.hidden-illustration {
+    opacity: 0;
+    transform: translateY(-20px);
+    pointer-events: none;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+#splash-canvas-wrapper {
+    transition: opacity 0.8s ease, transform 0.8s ease, height 0.8s ease, margin 0.8s ease;
+}
+
+#splash-canvas-wrapper.collapsed {
+    height: 0;
+    margin: 0;
+    opacity: 0;
+    overflow: hidden;
+}
+
+/* AI Status Overlays */
+.search-status-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(26, 10, 46, 0.9);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 30;
+    text-align: center;
+    padding: 20px;
+    cursor: pointer;
+    transition: opacity 0.3s ease;
+}
+
+.search-status-overlay span {
+    color: var(--highlight-color);
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.search-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: var(--highlight-color);
+    animation: spin 1s ease-in-out infinite;
+    margin-right: 10px;
+    vertical-align: middle;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.cloud-fallback {
+    color: var(--muted-color);
+    font-size: 0.8rem;
+    margin-top: 10px;
+}
+
+.cloud-fallback a {
+    text-decoration: underline;
+}
+
+#search-input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }

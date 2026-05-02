@@ -9,11 +9,11 @@ All material on the [diodesign.org website](https://diodesign.org/) and in its [
 
 *   Copyright &copy; 2026 Chris Williams.
 
-## Independence of the lab
+## Independence
 
 We are an independent collective, not affiliated with any corporation, institution, or organization. Any opinions or statements made by any contributors on this website or in its source code repository are their own and do not represent any employer, entity, or group.
 
-## Liability
+## No liability
 
 This website, its content, and its source code repository are provided “as is”, without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose and noninfringement. In no event shall the contributors or copyright holders be liable for any claim, damages or other liability, whether in an action of contract, tort or otherwise, arising from, out of or in connection with the website, the repository, or the use or other dealings in either.
 
