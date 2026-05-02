@@ -6,7 +6,7 @@ permalink: "osdev-and-retro.html"
 summary: "Why writing an OS is still hard, and retro computing is still wild."
 ---
 
-I spend my day job looking at planet-scale infrastructure and its users, so naturally, in my off-hours, my brain decides it's the perfect time to think about MMU page table setups and retro computing.
+I spend my day job thinking about planet-scale infrastructure and its users, so naturally, in my off-hours, my brain decides it's the perfect time to think about MMU page table setups and retro computing.
 
 ### AI-assisted OS development
 
