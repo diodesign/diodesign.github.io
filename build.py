@@ -3,6 +3,7 @@ import math
 import sys
 import subprocess
 import shutil
+import time
 
 # Auto-setup: Ensure dependencies are installed
 def setup_dependencies():
@@ -29,6 +30,9 @@ import frontmatter
 import markdown
 import http.server
 import socketserver
+import datetime
+import email.utils
+from xml.sax.saxutils import escape
 
 class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
     """Custom handler to disable browser caching during development."""
@@ -113,6 +117,7 @@ def build_log_pages(data_subdir, title, subtitle, folder_name):
                     # Fallback for permalink if not in frontmatter
                     if 'permalink' not in entry:
                         entry['permalink'] = filename.replace('.md', '.html')
+                    entry['folder'] = folder_name
                     entries.append(entry)
 
     # Sort entries by date (descending)
@@ -166,6 +171,62 @@ def build_log_pages(data_subdir, title, subtitle, folder_name):
         
         output_name = "index.html" if page_num == 1 else f"p{page_num}.html"
         build_page('log.html', context, os.path.join(folder_name, output_name))
+    
+    return entries
+
+def generate_rss(entries):
+    """Generates an RSS 2.0 feed from the given entries."""
+    base_url = "https://diodesign.org"
+    rss_items = []
+    
+    # Sort all entries by date descending for the feed
+    sorted_entries = sorted(entries, key=lambda x: str(x.get('date', '')), reverse=True)
+    
+    for entry in sorted_entries:
+        title = escape(entry.get('title', 'Untitled'))
+        link = f"{base_url}/{entry['folder']}/{entry['permalink']}"
+        date_str = str(entry.get('date', ''))
+        
+        try:
+            dt = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+            # Set to noon to avoid timezone ambiguity in a simple way for daily logs
+            dt = dt.replace(hour=12, minute=0, second=0)
+            pub_date = email.utils.format_datetime(dt)
+        except ValueError:
+            pub_date = date_str
+
+        # Use summary if available, otherwise fallback to full content
+        description_text = entry.get('summary') or entry.get('content', '')
+        description = escape(description_text)
+        
+        item = f"""    <item>
+      <title>{title}</title>
+      <link>{link}</link>
+      <guid isPermaLink="true">{link}</guid>
+      <pubDate>{pub_date}</pubDate>
+      <description>{description}</description>
+    </item>"""
+        rss_items.append(item)
+
+    now = email.utils.format_datetime(datetime.datetime.now())
+    
+    rss_template = f"""<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<channel>
+  <title>diodesign</title>
+  <link>{base_url}</link>
+  <description>Technical logs and musings from diodesign.org</description>
+  <language>en-us</language>
+  <lastBuildDate>{now}</lastBuildDate>
+  <atom:link href="{base_url}/rss.xml" rel="self" type="application/rss+xml" />
+  {"\n".join(rss_items)}
+</channel>
+</rss>"""
+
+    rss_path = os.path.join(OUTPUT_DIR, 'rss.xml')
+    with open(rss_path, 'w') as f:
+        f.write(rss_template)
+    print(f"Built rss.xml")
 
 def prepare_output_directory():
     """Removes old generated files and directories to ensure a clean build."""
@@ -222,8 +283,12 @@ def build_site():
     }, 'contact/index.html')
     
     # Build logs
-    build_log_pages('work-log', 'Work Log', 'Debugging the universe, one line at a time', 'work-log')
-    build_log_pages('life-log', 'Life Log', 'Mostly harmless', 'life-log')
+    all_entries = []
+    all_entries.extend(build_log_pages('work-log', 'Work Log', 'Debugging the universe, one line at a time', 'work-log'))
+    all_entries.extend(build_log_pages('life-log', 'Life Log', 'Mostly harmless', 'life-log'))
+
+    # Generate RSS feed
+    generate_rss(all_entries)
 
     # Build legal and contributor pages
     contrib_data = load_markdown('contributors.md')
@@ -263,20 +328,35 @@ def main():
         # Aggressively clear the port if it's already in use
         try:
             subprocess.run(['fuser', '-k', f'{port}/tcp'], capture_output=True)
-            import time
-            time.sleep(0.2) # Give the OS a moment to release the socket
+            time.sleep(0.5) # Give the OS a moment to release the socket
         except:
             pass
 
         socketserver.TCPServer.allow_reuse_address = True
         import functools
         handler = functools.partial(NoCacheHandler, directory=OUTPUT_DIR)
-        with socketserver.TCPServer(("", port), handler) as httpd:
+        
+        # Retry logic for binding to the port
+        retries = 10
+        while retries > 0:
             try:
-                httpd.serve_forever()
-            except KeyboardInterrupt:
-                pass
-        return
+                with socketserver.TCPServer(("", port), handler) as httpd:
+                    httpd.serve_forever()
+                return # Normal exit
+            except OSError as e:
+                if e.errno == 98: # Address already in use
+                    print(f"Port {port} is in use, retrying in 1s... ({retries} attempts left)")
+                    try:
+                        subprocess.run(['fuser', '-k', f'{port}/tcp'], capture_output=True)
+                    except:
+                        pass
+                    time.sleep(1)
+                    retries -= 1
+                else:
+                    raise e
+        
+        print(f"FATAL: Could not bind to port {port} after multiple attempts.")
+        sys.exit(1)
 
     # Handle standalone --clear flag
     if len(sys.argv) > 1 and sys.argv[1] == '--clear':
@@ -288,7 +368,6 @@ def main():
 
     # Start server if requested
     if '--server' in sys.argv:
-        import time
         print("\nBuild successful. Starting server on port 8000...")
         # Use our own script to run the internal server with cache disabled
         server_process = subprocess.Popen([sys.executable, sys.argv[0], "--internal-server"])

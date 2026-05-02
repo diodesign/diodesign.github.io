@@ -20,3 +20,5 @@ Our current public projects include:
 | Person | Background |
 |---------|-------------|
 | [Chris Williams](/contact/) | A San Francisco-based technical editor in [Google Cloud](https://cloud.google.com/) with over 20 years of experience in professional publishing and open-source systems engineering. |
+
+You can follow our updates using the [RSS feed](/rss.xml).

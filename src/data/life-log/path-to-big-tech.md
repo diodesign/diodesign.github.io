@@ -3,11 +3,12 @@ title: "The path to Big Tech"
 date: "2026-04-30"
 byline: "Chris Williams"
 permalink: "path-to-big-tech.html"
+summary: "My journey from a newspaper reporter to working inside Google."
 ---
 
-Right off the bat, I want to say I don't speak for Google in any way, shape, or form. I'm just a guy who has a keyboard, an internet connection, and some opinions.
+Right off the bat, I want to say I don't speak for Google in any way, shape, or form. I'm just a guy with a keyboard, an internet connection, and some opinions.
 
-It’s been so peculiar working on the inside after years of looking in as a journalist, especially during the spectacle of [Google Cloud Next 2026](https://blog.google/innovation-and-ai/infrastructure-and-cloud/google-cloud/next-2026/).
+It’s been so peculiar working on the inside after years of looking in as a journalist, especially now with the spectacle of [Google Cloud Next 2026](https://blog.google/innovation-and-ai/infrastructure-and-cloud/google-cloud/next-2026/) in full swing.
 
 I mean that in the best way possible. Call me biased, and you should, but Google is a fantastic place to be; there are so many smart people tackling planet-scale problems. I’ve been here just shy of a year, and the learning curve is still vertical.
 

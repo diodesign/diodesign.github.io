@@ -3,6 +3,7 @@ title: "Migrating Diosix to Zig"
 date: "2026-04-30"
 byline: "Chris Williams"
 permalink: "diosix-rust-to-zig-migration.html"
+summary: "Migrating the Diosix hypervisor from Rust to Zig."
 ---
 
 I've decided to move the [Diosix](https://diosix.org/) [RISC-V](https://riscv.org/) hypervisor codebase from [Rust](https://www.rust-lang.org/) to [Zig](https://ziglang.org/). While I appreciate Rust's safety, and it is a fantastic language, I find Zig's approach to low-level systems programming more productive. This isn't a critique of Rust’s capabilities, but rather a preference for a different development flow. Zig allows me to write as I think from an overall design, giving me the mechanisms for safety without the restrictiveness of a mandatory borrow checker.
