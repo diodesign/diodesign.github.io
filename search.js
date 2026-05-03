@@ -8,23 +8,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     const searchInput = document.getElementById('search-input');
     const searchResults = document.getElementById('search-results');
     const splashWrapper = document.getElementById('splash-canvas-wrapper');
+    const splashText = document.getElementById('splash-text');
     const statusOverlay = document.getElementById('search-status-overlay');
     const cloudFallback = document.getElementById('search-cloud-fallback');
     const searchReset = document.getElementById('search-reset');
     const searchBox = document.querySelector('.search-box');
 
-    // 1. Full Schema & Configuration
-    const API_CONFIG = {
-        expectedInputs: [{ type: "text", languages: ["en"] }],
-        expectedOutputs: [{ type: "text", languages: ["en"] }]
-    };
-    const COLD_START_TIMEOUT = 60000; // 60s for LUKS/Linux cold start latency
-
     let session = null;
     let searchIndex = [];
 
     // 2. Silent Detection (Circuit Breaker)
-    if (typeof LanguageModel === 'undefined') {
+    let aiModel = null;
+    if (window.LanguageModel) {
+        aiModel = window.LanguageModel;
+    } else if (window.ai && window.ai.languageModel) {
+        aiModel = window.ai.languageModel;
+    } else if (window.ai && window.ai.assistant) {
+        aiModel = window.ai.assistant;
+    }
+
+    if (!aiModel) {
         return;
     }
 
@@ -34,25 +37,18 @@ document.addEventListener('DOMContentLoaded', async () => {
      */
     async function initializeAI() {
         statusOverlay.style.display = 'flex';
-        statusOverlay.innerHTML = '<span><div class="search-spinner"></div>Hydrating neural weights...</span>';
+        statusOverlay.innerHTML = '<span><div class="search-spinner"></div>Initializing AI Model (may take a few moments)...</span>';
         statusOverlay.style.cursor = 'wait';
         searchInput.disabled = true;
 
-        const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Initialization Timeout')), COLD_START_TIMEOUT)
-        );
-
         try {
-            // Atomic initialization with timeout and schema compliance
-            session = await Promise.race([
-                LanguageModel.create({
-                    ...API_CONFIG,
-                    systemPrompt: "You are the diodesign lab AI. Answer using the provided technical archives. Maintain a concise, technical, and objective tone. It's OK to match the user's tone with your own but NEVER be offensive nor unprofessional."
-                }),
-                timeoutPromise
-            ]);
+            // Initialize with schema compliance
+            session = await aiModel.create({
+                systemPrompt: "You are the diodesign lab AI. Answer using the provided technical archives. Maintain a concise, technical, and objective tone. It's OK to match the user's tone with your own but NEVER be offensive nor unprofessional."
+            });
 
             statusOverlay.style.display = 'none';
+            cloudFallback.style.display = 'none';
             searchInput.disabled = false;
             searchInput.placeholder = "Ask the lab anything...";
             searchInput.focus();
@@ -60,11 +56,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('AI Initialization failed:', e);
             statusOverlay.style.display = 'none';
 
-            // Cloud Fallback on failure or QuotaExceededError
+            // Cloud Fallback on failure
             cloudFallback.style.display = 'block';
-            if (e.name === 'QuotaExceededError') {
-                cloudFallback.innerHTML = 'Neural quota exceeded. <a href="https://www.google.com/">Use Cloud Search &rarr;</a>';
-            }
+            cloudFallback.innerHTML = 'Neural link stalled. <a href="https://www.google.com/">Use Cloud Search &rarr;</a>';
         }
     }
 
@@ -73,25 +67,40 @@ document.addEventListener('DOMContentLoaded', async () => {
      */
     async function startLifecycle() {
         try {
-            const status = await LanguageModel.availability(API_CONFIG);
+            const isNewApi = typeof aiModel.capabilities === 'function';
+            let status;
+            if (isNewApi) {
+                const caps = await aiModel.capabilities();
+                status = caps.available;
+            } else {
+                status = await aiModel.availability();
+            }
 
-            if (status === 'no' || status === 'unavailable') {
-                return; // Silent abort: Do not show broken buttons
+            if (status === 'no') {
+                return; // Silent abort: completely unavailable
             }
 
             searchContainer.style.display = 'block';
 
-            if (status === 'readily' || status === 'available') {
-                // Ready for auto-initialization
-                await initializeAI();
-            } else if (status === 'downloadable' || status === 'after-download') {
-                // Explicit Download State: Show overlay and wait for user click
+            if (status !== 'readily' && status !== 'available') {
                 statusOverlay.style.display = 'flex';
+                statusOverlay.innerHTML = '<span><div class="search-spinner"></div>Downloading model... please wait.</span>';
+                statusOverlay.style.cursor = 'wait';
                 searchInput.disabled = true;
-                statusOverlay.addEventListener('click', initializeAI, { once: true });
+
+                // Poll every 5 seconds until ready or downloaded
+                const interval = setInterval(async () => {
+                    const checkStatus = isNewApi ? (await aiModel.capabilities()).available : await aiModel.availability();
+                    if (checkStatus === 'readily' || checkStatus === 'available' || checkStatus === 'after-download') {
+                        clearInterval(interval);
+                        await initializeAI();
+                    }
+                }, 5000);
+            } else {
+                await initializeAI();
             }
         } catch (e) {
-            console.error('Lifecycle check failed');
+            console.error('Lifecycle check failed', e);
         }
     }
 
@@ -133,6 +142,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!splashWrapper.classList.contains('collapsed')) {
             splashWrapper.classList.add('collapsed');
         }
+        if (splashText && !splashText.classList.contains('collapsed')) {
+            splashText.classList.add('collapsed');
+        }
 
         searchResults.style.display = 'block';
         searchBox.classList.remove('complete');
@@ -172,11 +184,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Mark as complete once the stream finishes
             searchBox.classList.add('complete');
             searchReset.classList.add('visible');
+            searchReset.innerHTML = '<a href="/">Ask another question &rarr;</a>';
         } catch (err) {
             console.error('Inference failed');
             searchContainer.style.display = 'none';
             cloudFallback.style.display = 'block';
             splashWrapper.classList.remove('collapsed');
+            if (splashText) splashText.classList.remove('collapsed');
         }
     }
 
