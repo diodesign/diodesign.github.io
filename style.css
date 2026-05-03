@@ -428,13 +428,14 @@ th {
     transition: opacity 0.5s ease, transform 0.5s ease;
 }
 
-#splash-canvas-wrapper {
-    transition: opacity 0.8s ease, transform 0.8s ease, height 0.8s ease, margin 0.8s ease;
+#splash-canvas-wrapper, #splash-text {
+    transition: opacity 0.8s ease, transform 0.8s ease, height 0.8s ease, margin 0.8s ease, padding 0.8s ease;
 }
 
-#splash-canvas-wrapper.collapsed {
+#splash-canvas-wrapper.collapsed, #splash-text.collapsed {
     height: 0;
     margin: 0;
+    padding: 0;
     opacity: 0;
     overflow: hidden;
 }
