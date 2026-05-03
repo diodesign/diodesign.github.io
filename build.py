@@ -284,8 +284,8 @@ def build_site():
     
     # Build logs
     all_entries = []
-    all_entries.extend(build_log_pages('work-log', 'Work Log', 'Debugging the universe, one line at a time', 'work-log'))
-    all_entries.extend(build_log_pages('life-log', 'Life Log', 'Mostly harmless', 'life-log'))
+    all_entries.extend(build_log_pages('work-log', 'Work log', 'Debugging the universe, one line at a time', 'work-log'))
+    all_entries.extend(build_log_pages('life-log', 'Life log', 'Mostly harmless', 'life-log'))
 
     # Generate RSS feed
     generate_rss(all_entries)
