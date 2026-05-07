@@ -360,6 +360,25 @@ def build_site():
     # Build search index for AI
     build_search_index()
 
+def chunk_text(text, max_chars=5000):
+    """Simple character-based chunking as a proxy for tokens."""
+    chunks = []
+    lines = text.split('\n')
+    current_chunk = []
+    current_length = 0
+    
+    for line in lines:
+        if current_length + len(line) > max_chars and current_chunk:
+            chunks.append('\n'.join(current_chunk))
+            current_chunk = []
+            current_length = 0
+        current_chunk.append(line)
+        current_length += len(line) + 1
+        
+    if current_chunk:
+        chunks.append('\n'.join(current_chunk))
+    return chunks
+
 def build_search_index():
     """Generates a search-index.json for client-side AI context."""
     import json
@@ -367,6 +386,20 @@ def build_search_index():
 
     index = []
     
+    def add_to_index(title, url, content):
+        # Strip markdown links, bold, etc. (basic)
+        content = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', content)
+        content = re.sub(r'[*#_`]', '', content)
+        
+        chunks = chunk_text(content)
+        for i, chunk in enumerate(chunks):
+            index.append({
+                'title': title,
+                'url': url,
+                'content': chunk,
+                'chunk': i
+            })
+
     # Process regular pages
     pages = ['about.md', 'contact.md', 'contributors.md', 'license.md', 'privacy.md']
     for page_file in pages:
@@ -374,17 +407,17 @@ def build_search_index():
         if os.path.exists(path):
             with open(path, 'r') as f:
                 post = frontmatter.load(f)
-                content = post.content
-                # Strip markdown links, bold, etc. (basic)
-                content = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', content)
-                content = re.sub(r'[*#_`]', '', content)
-                
                 name = page_file.replace('.md', '')
-                index.append({
-                    'title': post.metadata.get('title', name.capitalize()),
-                    'url': f'/{name}/',
-                    'content': content[:2000]
-                })
+                title = post.metadata.get('title', name.capitalize())
+                byline = post.metadata.get('byline', '')
+                summary = post.metadata.get('summary', '')
+                full_content = f"{title}\n{byline}\n{summary}\n{post.content}"
+                
+                add_to_index(
+                    title,
+                    f'/{name}/',
+                    full_content
+                )
 
     # Process logs
     for log_dir, folder in [('work-log', 'work-log'), ('life-log', 'life-log')]:
@@ -395,21 +428,24 @@ def build_search_index():
                     path = os.path.join(full_log_dir, filename)
                     with open(path, 'r') as f:
                         post = frontmatter.load(f)
-                        content = post.content
-                        content = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', content)
-                        content = re.sub(r'[*#_`]', '', content)
-                        
                         permalink = post.metadata.get('permalink', filename.replace('.md', '.html'))
-                        index.append({
-                            'title': post.metadata.get('title', 'Untitled'),
-                            'url': f'/{folder}/{permalink}',
-                            'content': content[:2000]
-                        })
+                        title = post.metadata.get('title', 'Untitled')
+                        byline = post.metadata.get('byline', '')
+                        summary = post.metadata.get('summary', '')
+                        
+                        # Combine title, byline, summary and content for indexing
+                        full_content = f"{title}\n{byline}\n{summary}\n{post.content}"
+                        
+                        add_to_index(
+                            title,
+                            f'/{folder}/{permalink}',
+                            full_content
+                        )
 
     index_path = os.path.join(OUTPUT_DIR, 'search-index.json')
     with open(index_path, 'w') as f:
         json.dump(index, f, separators=(',', ':'))
-    print(f"Built search-index.json with {len(index)} entries")
+    print(f"Built search-index.json with {len(index)} chunks")
 
 def main():
     # Handle internal server flag used for development
