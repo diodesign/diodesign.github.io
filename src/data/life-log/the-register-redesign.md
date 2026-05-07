@@ -8,7 +8,9 @@ summary: "My thoughts on a major overhaul of enterprise IT news site The Registe
 
 Yesterday, [_The Register_](https://www.theregister.com/), the enterprise IT publication I spent years editing while managing a crew of writers, unveiled a substantial redesign.
 
-While the near-thirty-year-old publication has iterated on its design in the past (a quick search reminded me of a [2018 layout trial](https://www.theregister.com/offbeat/2018/07/17/you-wanna-be-an-alpha-tester-of-the-registers-redesign-step-this-way/1378924)), this is easily the biggest departure in recent memory. They've moved away from the usual rigid, aligned rows of content that defined _El Reg_ for ages in favor of a much more free-flowing layout. It has clear hero content at the top to read first that's engaging, then sections of special interest amid a flood of news. There's a navigation bar along the top again that makes it plain to visitors what this publication is all about. Data centers, security, software developers, open source, and more.
+While the near-thirty-year-old publication has iterated on its design in the past (a quick search reminded me of a [2018 layout trial](https://www.theregister.com/offbeat/2018/07/17/you-wanna-be-an-alpha-tester-of-the-registers-redesign-step-this-way/1378924)), this is easily the biggest departure in recent memory. They've moved away from the usual rigid, aligned rows of content that defined _El Reg_ for ages in favor of a much more free-flowing layout.
+
+It has clear hero content at the top to read first that's engaging, then sections of special interest amid a flood of news. There's a navigation bar along the top again that makes it plain to visitors what this publication is all about. Data centers, security, software developers, open source, and more.
 
 The sister sites [_The Next Platform_](https://www.nextplatform.com/), [_Blocks and Files_](https://www.blocksandfiles.com/), and [_DevClass_](https://www.devclass.com/) have undergone similar redesigns at the same time.
 
@@ -34,7 +36,7 @@ And that takes us to today's four-column layout that's a combination of the 2000
 
 To the team: keep at it. Redesigning a site with a non-trivial readership as informed, engaged, and... let's say *opinionated*... as _El Reg_’s requires a very thick skin. Looking at the [early forum feedback](https://forums.theregister.com/forum/all/2026/05/06/202614/), it seems the traditional "everything was better in 1998" crowd is out in full force, complaining about the lack of a grid structure on the homepage even though in 1998 the site had unaligned rows. Maybe everyone got used to the grid.
 
-My advice? Hold your ground. It’s important to try something new, even if it ruffles a few feathers. The soul of the site — the info-dense, fast-loading, acerbic core — is still there. I can imagine there will be some tweaks over the coming weeks, as any redesign goes through. Revisiting some of the heading sizes and styling, and going easy on the rectangles, may be all it takes to polish the appearance.
+My advice? Hold your ground. It’s important to try something new, even if it ruffles a few feathers. The soul of the site — the info-dense, fast-loading, acerbic core — is still there. I can imagine there will be some tweaks over the coming weeks, as any redesign goes through. Revisiting some of the heading sizes and styling, and perhaps going easy on some of the rectangles and borders, may be all it takes to polish the new look.
 
 If anyone's really upset with the layout, just browse [the archive page](https://www.theregister.com/archive) which has the earlier fixed-row layout.
 
