@@ -1,10 +1,14 @@
+html {
+    font-size: 1.44rem;
+}
+
 :root {
     --bg-color: #1a0a2e;
     --text-color: #f0f0f0;
     --highlight-color: #ffd700;
     --accent-color: #4b0082;
     --muted-color: #8e7fb0;
-    --container-width: 900px;
+    --container-width: 1200px;
 }
 
 * {
@@ -157,7 +161,7 @@ footer {
     z-index: 10;
     /* Sits above all illustration layers */
     text-align: center;
-    max-width: 600px;
+    max-width: 900px;
     margin-top: 0;
 }
 
@@ -195,7 +199,7 @@ footer {
 }
 
 .content {
-    max-width: 700px;
+    max-width: 1020px;
     margin: 0 auto;
     padding-top: 40px;
     padding-bottom: 40px;
