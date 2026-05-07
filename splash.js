@@ -11,7 +11,7 @@ const GRID_COLS = 320;
 const GRID_ROWS = 160;
 const TOTAL_CELLS = GRID_COLS * GRID_ROWS;
 const TICK_RATE = 1000 / 60; // ms between CA steps
-const START_DELAY = 2000; // 2 seconds static logo
+const START_DELAY = 4000; // milliseconds delay for initial logo
 const SPRINKLE_DELAY = 2000; // time under threshold before we add more
 const MIN_POPULATION_RATIO = 0.1; // ensure minimum population
 const LOW_CELL_THRESHOLD = Math.floor(TOTAL_CELLS * MIN_POPULATION_RATIO);
@@ -27,13 +27,10 @@ const colors = {
     yellow: { h: 51, s: 100, l: 50 } // Gold base
 };
 
-const ASCII_LOGO = [
-    " #####  #  ####  #####  ######  ####  #  ####  #    # ",
-    " #    # # #    # #    # #      #      # #    # ##   # ",
-    " #    # # #    # #    # #####   ####  # #      # #  # ",
-    " #    # # #    # #    # #           # # #  ### #  # # ",
-    " #    # # #    # #    # #      #    # # #    # #   ## ",
-    " #####  #  ####  #####  ######  ####  #  ####  #    # "
+const MESSAGE = [
+    "  DIODESIGN LAB   ",
+    "  SYSTEMS ONLINE  ",
+    "    READY v1.0    "
 ];
 
 // Neighbor index caches for performance optimization
@@ -80,47 +77,51 @@ function resize() {
     height = canvas.height = canvas.parentElement.clientHeight;
 }
 
-function drawLogo(startX, startY) {
-    const logoCharsWidth = ASCII_LOGO[0].length;
-    const logoCharsHeight = ASCII_LOGO.length;
+function drawMessage(lines) {
+    const charW = 5;
+    const charH = 7;
+    const spacingX = 1;
+    const spacingY = 2;
+    const scale = 2;
 
-    for (let y = 0; y < logoCharsHeight; y++) {
-        for (let x = 0; x < logoCharsWidth; x++) {
-            if (ASCII_LOGO[y][x] === '#') {
-                for (let dy = 0; dy < 2; dy++) {
-                    for (let dx = 0; dx < 2; dx++) {
-                        const gx = (startX + x * 2 + dx + GRID_COLS) % GRID_COLS;
-                        const gy = (startY + y * 2 + dy + GRID_ROWS) % GRID_ROWS;
-                        const idx = gy * GRID_COLS + gx;
-                        grid[idx] = 1;
-                        colorGrid[idx] = 0.6; // Initial brand color strength
+    const totalWidth = lines[0].length * (charW + spacingX) * scale;
+    const totalHeight = lines.length * (charH + spacingY) * scale;
+
+    const startX = Math.floor((GRID_COLS - totalWidth) / 2);
+    const startY = Math.floor((GRID_ROWS - totalHeight) / 2);
+
+    lines.forEach((line, rowIdx) => {
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i].toUpperCase();
+            const bitmap = FONT[char] || FONT[' '];
+
+            const charOffsetX = startX + i * (charW + spacingX) * scale;
+            const charOffsetY = startY + rowIdx * (charH + spacingY) * scale;
+
+            for (let y = 0; y < charH; y++) {
+                const row = bitmap[y];
+                for (let x = 0; x < charW; x++) {
+                    if ((row >> (4 - x)) & 1) {
+                        for (let dy = 0; dy < scale; dy++) {
+                            for (let dx = 0; dx < scale; dx++) {
+                                const gx = (charOffsetX + x * scale + dx + GRID_COLS) % GRID_COLS;
+                                const gy = (charOffsetY + y * scale + dy + GRID_ROWS) % GRID_ROWS;
+                                const idx = gy * GRID_COLS + gx;
+                                grid[idx] = 1;
+                                colorGrid[idx] = 0.6;
+                            }
+                        }
                     }
                 }
             }
         }
-    }
+    });
 }
 
 function resetGrid() {
     grid.fill(0);
     colorGrid.fill(0);
-
-    const logoGridWidth = ASCII_LOGO[0].length * 2;
-    const logoGridHeight = ASCII_LOGO.length * 2;
-
-    const centerX = Math.floor((GRID_COLS - logoGridWidth) / 2);
-    const centerY = Math.floor((GRID_ROWS - logoGridHeight) / 2);
-
-    //for (let j = 0; j < 4; j++) {
-    //    for (let i = 0; i < 2; i++) {
-    //        const stagger = (j % 2 === 1) ? 56 : 0;
-    //        const x = centerX + i * tileW + stagger;
-    //        const y = centerY + j * tileH;
-    //        drawLogo(x, y);
-    //      }
-    //}
-
-    drawLogo(centerX, centerY);
+    drawMessage(MESSAGE);
 }
 
 function fillCluster(gx, gy, size = 4) {

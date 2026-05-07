@@ -351,7 +351,7 @@ def build_site():
     }, 'privacy/index.html')
 
     # Copy static assets
-    static_assets = ['style.css', 'splash.js', 'search.js', 'favicon.ico', 'CNAME', 'keybase.txt']
+    static_assets = ['style.css', 'splash.js', 'characters.js', 'search.js', 'favicon.ico', 'CNAME', 'keybase.txt']
     for asset in static_assets:
         if os.path.exists(asset):
             shutil.copy2(asset, os.path.join(OUTPUT_DIR, asset))
