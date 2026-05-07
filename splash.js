@@ -8,12 +8,12 @@ let isMouseDown = false;
 
 // Configuration constants
 const GRID_COLS = 320;
-const GRID_ROWS = 160;
+const GRID_ROWS = 82;
 const TOTAL_CELLS = GRID_COLS * GRID_ROWS;
 const TICK_RATE = 1000 / 60; // ms between CA steps
 const START_DELAY = 4000; // milliseconds delay for initial logo
 const SPRINKLE_DELAY = 2000; // time under threshold before we add more
-const MIN_POPULATION_RATIO = 0.1; // ensure minimum population
+const MIN_POPULATION_RATIO = 0.02; // ensure minimum population
 const LOW_CELL_THRESHOLD = Math.floor(TOTAL_CELLS * MIN_POPULATION_RATIO);
 const FADE_RATE = 0.04; // Visual decay speed for dead cells
 
