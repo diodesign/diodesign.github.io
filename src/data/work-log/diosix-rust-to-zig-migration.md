@@ -12,6 +12,6 @@ You can find this ongoing Zig work in the [zig branch](https://github.com/diodes
 
 The road ahead for Diosix is focused on demonstrating its architecture as a mesh of autonomous gossiping nodes. 
 
-The next phase of the project will see Diosix evolve into a self-organizing mesh, where localized reasoning within a sovereign root VM allows it and its peer VMs to negotiate resources and maintain resilience across the mesh without a central controller. This shift toward decentralized intent is going to be an interesting challenge to pull off, and I’m curious to see how this new environment handles the stress of 1,000 or more VMs.
+The next phase of the project will see - hopefully - Diosix evolve into a self-organizing mesh, where localized reasoning within a sovereign root VM allows it and its peer VMs to negotiate resources and maintain resilience across the mesh without needing a central controller. This shift toward decentralized intent is going to be an interesting challenge to pull off, and I'm curious to see how this new environment handles the stress of 1,000 or more VMs.
 
-I’ll be pushing these experiments out as they stabilize; I'm wondering what others might build on top of a system that manages itself.
+I'll be pushing these experiments out as they stabilize; I'm wondering what others might build on top of a system that manages itself.

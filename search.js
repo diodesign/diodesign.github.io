@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             // Initialize with schema compliance
             session = await aiModel.create({
-                systemPrompt: "You are the diodesign lab AI. Answer using the provided technical archives. Maintain a concise, technical, and objective tone. It's OK to match the user's tone with your own but NEVER be offensive nor unprofessional."
+                systemPrompt: "You are the diodesign lab AI. Answer using the provided technical archives. Maintain a concise, technical, and objective voice. It's OK to match the user's tone with your own but NEVER be offensive nor unprofessional."
             });
 
             statusOverlay.style.display = 'none';
@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const prompt = `LAB ARCHIVES:\n${context}\n\nQUERY: ${query}\n\nRESPONSE:`;
 
-            // 5. Streaming Logic: Async Iterator for search results
+            // Streaming Logic: Async Iterator for search results
             const stream = session.promptStreaming(prompt);
 
             searchResults.innerHTML = '';

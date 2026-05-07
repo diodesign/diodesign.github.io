@@ -48,6 +48,12 @@ TEMPLATE_DIR = 'src/templates'
 OUTPUT_DIR = '_site'
 LOG_ENTRIES_PER_PAGE = 5
 
+# Global context for templates
+LATEST_LOG_CONTEXT = {
+    'latest_url': '#',
+    'latest_title': 'None'
+}
+
 def load_data(filename):
     """Loads YAML data from the data directory."""
     path = os.path.join(DATA_DIR, filename)
@@ -88,6 +94,7 @@ def build_page(template_name, context, output_path):
         'title': context.get('page_title', 'diodesign'),
         'body': page_body
     }
+    final_context.update(LATEST_LOG_CONTEXT)
     
     final_html = render_template(base_template, final_context)
     
@@ -258,10 +265,41 @@ def get_file_mtimes():
                 pass
     return mtimes
 
+def get_latest_log_entry():
+    """Finds the most recent log entry across all log directories."""
+    entries = []
+    for log_dir, folder_name in [('work-log', 'work-log'), ('life-log', 'life-log')]:
+        path = os.path.join(DATA_DIR, log_dir)
+        if os.path.exists(path) and os.path.isdir(path):
+            for filename in os.listdir(path):
+                if filename.endswith('.md'):
+                    with open(os.path.join(path, filename), 'r') as f:
+                        post = frontmatter.load(f)
+                        entry = post.metadata
+                        if 'permalink' not in entry:
+                            entry['permalink'] = filename.replace('.md', '.html')
+                        entry['folder'] = folder_name
+                        entries.append(entry)
+    
+    if not entries:
+        return None
+        
+    entries.sort(key=lambda x: str(x.get('date', '')), reverse=True)
+    return entries[0]
+
 def build_site():
     """Performs the complete site build."""
     # Prepare for a fresh build
     prepare_output_directory()
+
+    # Populate latest log context for footer
+    global LATEST_LOG_CONTEXT
+    latest = get_latest_log_entry()
+    if latest:
+        LATEST_LOG_CONTEXT = {
+            'latest_url': f"/{latest['folder']}/{latest['permalink']}",
+            'latest_title': latest.get('title', 'Untitled')
+        }
 
     # Build splash page
     build_page('index.html', {'page_title': 'Home'}, 'index.html')

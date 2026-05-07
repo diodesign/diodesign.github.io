@@ -108,20 +108,19 @@ function resetGrid() {
     const logoGridWidth = ASCII_LOGO[0].length * 2;
     const logoGridHeight = ASCII_LOGO.length * 2;
 
-    const tileW = 160;
-    const tileH = 40;
-
     const centerX = Math.floor((GRID_COLS - logoGridWidth) / 2);
     const centerY = Math.floor((GRID_ROWS - logoGridHeight) / 2);
 
-    for (let j = 0; j < 4; j++) {
-        for (let i = 0; i < 2; i++) {
-            const stagger = (j % 2 === 1) ? 80 : 0;
-            const x = centerX + i * tileW + stagger;
-            const y = centerY + j * tileH;
-            drawLogo(x, y);
-        }
-    }
+    //for (let j = 0; j < 4; j++) {
+    //    for (let i = 0; i < 2; i++) {
+    //        const stagger = (j % 2 === 1) ? 56 : 0;
+    //        const x = centerX + i * tileW + stagger;
+    //        const y = centerY + j * tileH;
+    //        drawLogo(x, y);
+    //      }
+    //}
+
+    drawLogo(centerX, centerY);
 }
 
 function fillCluster(gx, gy, size = 4) {
@@ -151,6 +150,7 @@ function sprinkle() {
 }
 
 function fillAtMouse(e) {
+    if (performance.now() - startTime < START_DELAY) return;
     const rect = canvas.getBoundingClientRect();
     const mx = (e.clientX - rect.left) / width * GRID_COLS;
     const my = (e.clientY - rect.top) / height * GRID_ROWS;
@@ -159,12 +159,18 @@ function fillAtMouse(e) {
 
 function update(time) {
     if (time - startTime < START_DELAY) return;
+
+    // Transition cursor after delay
+    if (!canvas.classList.contains('active-animation')) {
+        canvas.classList.add('active-animation');
+    }
+
     if (time - lastUpdate < TICK_RATE) return;
     lastUpdate = time;
 
     let activeCells = 0;
 
-    // Phase 1: Calculate next generation (HighLife B36/S23)
+    // Calculate next generation (HighLife B36/S23)
     // Optimized with pre-calculated neighbor indices
     for (let i = 0; i < TOTAL_CELLS; i++) {
         let n8 = 0;
@@ -185,7 +191,7 @@ function update(time) {
         }
     }
 
-    // Phase 2: Apply next generation and update visual intensity in one pass
+    // Apply next generation and update visual intensity in one pass
     grid.set(nextGrid);
 
     for (let i = 0; i < TOTAL_CELLS; i++) {

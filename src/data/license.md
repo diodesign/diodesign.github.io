@@ -5,7 +5,7 @@ subtitle: "I'm sorry, Dave. I'm afraid you can't do that"
 
 ## License agreement
 
-All material on the [diodesign.org website](https://diodesign.org/) and in its [source code repository](https://github.com/diodesign/diodesign.github.io) is provided by its contributors under the terms of the [CC BY-SA 4.0 License](https://creativecommons.org/licenses/by-sa/4.0/).
+All material on the [diodesign.org website](https://diodesign.org/) and in its [source code repository](https://github.com/diodesign/diodesign.github.io) is provided by its [contributors](/contributors/) under the terms of the [CC BY-SA 4.0 License](https://creativecommons.org/licenses/by-sa/4.0/).
 
 In summary, you are free to:
 
@@ -23,8 +23,4 @@ You do not have to comply with the license for elements of the material in the p
 
 No warranties are given. The license may not give you all of the permissions necessary for your intended use. For example, other rights such as publicity, privacy, or moral rights may limit how you use the material.
 
-## Additional information
-
-*   For the full terms and conditions, see [the license legal code](https://creativecommons.org/licenses/by-sa/4.0/legalcode.en).
-*   For the material's contributors, copyright, and limitations of liability, see [Contributors](/contributors/).
-*   The website's content is built from its source code repository. For more information on how the website is built, see the [README](https://github.com/diodesign/diodesign.github.io/blob/prod/README).
+For the full terms and conditions, see [the license legal code](https://creativecommons.org/licenses/by-sa/4.0/legalcode.en).

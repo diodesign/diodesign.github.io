@@ -66,6 +66,17 @@ footer {
     color: var(--muted-color);
 }
 
+.latest-log-footer {
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+    color: var(--text-color);
+}
+
+.latest-log-footer a {
+    font-weight: 700;
+    color: var(--highlight-color);
+}
+
 /* Splash page */
 .splash-container {
     position: relative;
@@ -122,6 +133,10 @@ footer {
     width: 100%;
     height: 100%;
     display: block;
+    cursor: default;
+}
+
+#splash-canvas.active-animation {
     cursor: crosshair;
 }
 
@@ -186,21 +201,27 @@ footer {
     border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.content p, 
-.log-content p, 
+.content p,
+.log-content p,
 .log-content-full p {
     margin-bottom: 1.25rem;
 }
 
-.content ul, .log-content ul, .log-content-full ul, .search-results ul,
-.content ol, .log-content ol, .log-content-full ol, .search-results ol {
+.content ul,
+.log-content ul,
+.log-content-full ul,
+.search-results ul,
+.content ol,
+.log-content ol,
+.log-content-full ol,
+.search-results ol {
     margin-bottom: 1.25rem;
     padding-left: 1.5rem;
 }
 
-.content > *:last-child,
-.log-content > *:last-child,
-.log-content-full > *:last-child {
+.content>*:last-child,
+.log-content>*:last-child,
+.log-content-full>*:last-child {
     margin-bottom: 0 !important;
 }
 
@@ -296,7 +317,8 @@ table {
     margin-bottom: 2rem;
 }
 
-th, td {
+th,
+td {
     text-align: left;
     padding: 12px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -312,7 +334,8 @@ th {
 
 /* AI Search Box */
 .search-container {
-    display: none; /* Controlled by JS availability check */
+    display: none;
+    /* Controlled by JS availability check */
     margin: 2rem auto 0 auto;
     width: 90%;
     max-width: 550px;
@@ -322,36 +345,38 @@ th {
 
 .search-box {
     position: relative;
-    padding: 1px; /* The border width */
+    padding: 1px;
+    /* The border width */
     border-radius: 13px;
     background: rgba(255, 255, 255, 0.05);
     overflow: hidden;
 }
 
-/* The Gold Shine Border Effect */
 .search-box::before {
     content: '';
     position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 200%; /* Large enough to cover the diagonal during rotation */
-    aspect-ratio: 1 / 1;
-    transform: translate(-50%, -50%);
-    background: conic-gradient(
-        from 0deg,
-        transparent 0%,
-        transparent 45%,
-        #D4AF37 50%,
-        transparent 55%,
-        transparent 100%
-    );
-    animation: gold-rotate 6s linear infinite;
+    /* Use a large radial glow that follows the perimeter */
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(212, 175, 55, 0.9) 0%, transparent 70%);
+
+    /* offset-path allows the pulse to follow the border exactly at a constant speed */
+    offset-path: inset(0 0 0 0 round 13px);
+    offset-anchor: center;
+
+    animation: gold-travel 4s linear infinite;
     z-index: -1;
+    pointer-events: none;
 }
 
-@keyframes gold-rotate {
-    from { transform: translate(-50%, -50%) rotate(0deg); }
-    to { transform: translate(-50%, -50%) rotate(360deg); }
+@keyframes gold-travel {
+    from {
+        offset-distance: 0%;
+    }
+
+    to {
+        offset-distance: 100%;
+    }
 }
 
 .search-inner {
@@ -380,8 +405,9 @@ th {
 .search-results {
     font-size: 0.95rem;
     color: var(--text-color);
-    padding: 20px; /* Consistent padding on all sides */
-    display: none; /* Shown when results exist */
+    padding: 20px;
+    display: none;
+    /* Shown when results exist */
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     margin-top: 0;
     line-height: 1.6;
@@ -396,8 +422,9 @@ th {
 }
 
 .search-box.complete::before {
-    animation-play-state: paused;
-    opacity: 0.3; /* Fade out the shine slightly when complete */
+    /* Maintain the movement even when complete, but slower and dimmer */
+    opacity: 0.4;
+    animation-duration: 12s;
     transition: opacity 1s ease;
 }
 
@@ -405,12 +432,11 @@ th {
     margin-top: 1.5rem;
     text-align: center;
     font-size: 0.85rem;
-    opacity: 0;
-    transition: opacity 0.5s ease;
+    display: none;
 }
 
 .search-reset.visible {
-    opacity: 1;
+    display: block;
 }
 
 .search-reset a {
@@ -428,11 +454,13 @@ th {
     transition: opacity 0.5s ease, transform 0.5s ease;
 }
 
-#splash-canvas-wrapper, #splash-text {
+#splash-canvas-wrapper,
+#splash-text {
     transition: opacity 0.8s ease, transform 0.8s ease, height 0.8s ease, margin 0.8s ease, padding 0.8s ease;
 }
 
-#splash-canvas-wrapper.collapsed, #splash-text.collapsed {
+#splash-canvas-wrapper.collapsed,
+#splash-text.collapsed {
     height: 0;
     margin: 0;
     padding: 0;
@@ -478,7 +506,9 @@ th {
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .cloud-fallback {

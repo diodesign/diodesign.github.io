@@ -19,4 +19,4 @@ When available, all queries and processing for the [ask the lab](/) feature are 
 
 ## Contact
 
-For any privacy-related inquiries, [contact us](/contact).
+For any privacy-related inquiries, [contact us](/contact/).
