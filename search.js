@@ -3,7 +3,7 @@
  * Optimized for Chrome 147 (2026) Native LanguageModel API
  */
 
-(async function() {
+(async function () {
     const searchContainer = document.getElementById('search-container');
     const searchInput = document.getElementById('search-input');
     const searchResults = document.getElementById('search-results');
@@ -19,7 +19,6 @@
     let oramaAPI = null;
     let allChunks = [];
 
-    // 1. Silent Detection (Circuit Breaker)
     let aiModel = window.ai?.languageModel || window.ai?.assistant || window.LanguageModel;
 
     if (!aiModel) {
@@ -35,7 +34,7 @@
             console.log("AI Search: Loading Orama...");
             const oramaModule = await import('https://cdn.jsdelivr.net/npm/@orama/orama@latest/dist/index.js');
             oramaAPI = oramaModule;
-            
+
             const response = await fetch('/search-index.json');
             if (!response.ok) return;
             allChunks = await response.json();
@@ -178,13 +177,13 @@
                 // Manual Fallback for small index: simple keyword matching with ranking
                 console.log("AI Search: Orama returned no hits. Falling back to ranked keyword search.");
                 const keywords = query.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/).filter(k => k.length > 2);
-                
+
                 currentHits = allChunks.map(c => {
                     const contentLower = (c.title + " " + c.content).toLowerCase();
                     const score = keywords.reduce((s, kw) => s + (contentLower.includes(kw) ? 1 : 0), 0);
                     return { ...c, score };
                 }).filter(c => c.score > 0).sort((a, b) => b.score - a.score).slice(0, 5);
-                
+
                 if (currentHits.length > 0) {
                     console.log(`AI Search: Fallback found ${currentHits.length} matches. Top score: ${currentHits[0].score}`);
                 }
@@ -202,7 +201,7 @@
             // Build the prompt with token budget check
             const maxTokens = session.maxTokens || 4096;
             const safetyMargin = 500;
-            
+
             async function buildPrompt(hits) {
                 const contextStr = hits.map(h => {
                     const title = h.document ? h.document.title : h.title;
@@ -219,7 +218,7 @@
             try {
                 tokenCount = await session.countPromptTokens(prompt);
                 console.log(`AI Search: Initial token count: ${tokenCount}/${maxTokens}`);
-                
+
                 // If too large, drop chunks from the bottom until it fits
                 while (tokenCount > (maxTokens - safetyMargin) && currentHits.length > 1) {
                     console.warn('AI Search: Context too large, dropping a chunk...');
@@ -229,9 +228,9 @@
                     console.log(`AI Search: Revised token count: ${tokenCount}/${maxTokens}`);
                 }
             } catch (e) {
-                tokenCount = prompt.length / 4; 
+                tokenCount = prompt.length / 4;
             }
-            
+
             console.log("AI Search: Final prompt to model:", prompt);
 
             const stream = session.promptStreaming(prompt);
