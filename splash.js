@@ -29,8 +29,8 @@ const colors = {
 
 const MESSAGE = [
     "  DIODESIGN LAB   ",
-    "  SYSTEMS ONLINE  ",
-    "    READY v1.0    "
+    "  ONLINE SYSTEMS  ",
+    "    v1.0 READY   "
 ];
 
 // Neighbor index caches for performance optimization
