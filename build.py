@@ -411,7 +411,8 @@ def build_search_index():
                 title = post.metadata.get('title', name.capitalize())
                 byline = post.metadata.get('byline', '')
                 summary = post.metadata.get('summary', '')
-                full_content = f"{title}\n{byline}\n{summary}\n{post.content}"
+                date = post.metadata.get('date', '')
+                full_content = f"{title}\n{byline}\n{date}\n{summary}\n{post.content}"
                 
                 add_to_index(
                     title,
@@ -432,9 +433,10 @@ def build_search_index():
                         title = post.metadata.get('title', 'Untitled')
                         byline = post.metadata.get('byline', '')
                         summary = post.metadata.get('summary', '')
+                        date = post.metadata.get('date', '')
                         
-                        # Combine title, byline, summary and content for indexing
-                        full_content = f"{title}\n{byline}\n{summary}\n{post.content}"
+                        # Combine title, byline, date, summary and content for indexing
+                        full_content = f"{title}\n{byline}\n{date}\n{summary}\n{post.content}"
                         
                         add_to_index(
                             title,
