@@ -6,7 +6,7 @@ permalink: "chrome-prompt-api-integration.html"
 summary: "Implementing local AI search using Chrome's native LanguageModel API."
 ---
 
-For fun, I implemented a client-side AI-powered site search feature on diodeaign.org called [ask the lab](/). It uses the experimental [Prompt API](https://developer.chrome.com/docs/ai/prompt-api) built natively [into Chrome](https://developer.chrome.com/docs/ai/get-started), starting with Chrome Canary. You ask this website a question using the text box on the homepage, and it uses an on-device Large Language Model ([Gemini Nano](https://ai.google.dev/models/gemini-nano), if available) to answer those queries using the website's static archives, completely eliminating cloud latency and privacy concerns. It avoids sending anything to any server for processing.
+For fun, I implemented a client-side AI-powered site search feature on diodeaign.org called [ask the lab](/). It uses the experimental [Prompt API](https://developer.chrome.com/docs/ai/prompt-api) built natively [into Chrome](https://developer.chrome.com/docs/ai/get-started), starting with Chrome Canary. You ask this website a question using the text box on the homepage, and it uses an on-device large language model, currently [Gemini Nano](https://developer.android.com/ai/gemini-nano), if available, to answer those queries using the website's static archives, eliminating cloud latency and privacy concerns. It avoids sending anything to any server for processing.
 
 The feature works by combining the archives with the user's query and a system prompt, then sending that payload to the on-device model and displaying the answer in the page.
 
