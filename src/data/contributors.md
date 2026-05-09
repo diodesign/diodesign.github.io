@@ -12,7 +12,7 @@ This website uses the following open-source software:
 
 All other material on the [diodesign.org website](https://diodesign.org/) and in its [source code repository](https://github.com/diodesign/diodesign.github.io) is:
 
-*   Copyright &copy; 2026 Chris Williams.
+*   Copyright &copy; 2026 Chris Williams and the lab contributors.
 
 See the [terms of use](/license/) for information on redistribution and attribution requirements.
 
