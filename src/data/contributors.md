@@ -5,18 +5,16 @@ subtitle: "We fight for the users!"
 
 ## Copyright
 
-All material on the [diodesign.org website](https://diodesign.org/) and in its [source code repository](https://github.com/diodesign/diodesign.github.io) is:
+This website uses the following open-source software:
+
+*   [Orama](https://github.com/oramasearch/orama), which is copyright &copy; 2023 OramaSearch Inc, and covered by the [Apache License, Version 2.0](https://github.com/oramasearch/orama/blob/main/LICENSE.md).
+*   [Marked](https://github.com/markedjs/marked), which is copyright &copy; 2018-present, MarkedJS, and copyright &copy; 2011-2018, Christopher Jeffrey. It is covered by the [MIT License](https://github.com/markedjs/marked/blob/master/LICENSE).
+
+All other material on the [diodesign.org website](https://diodesign.org/) and in its [source code repository](https://github.com/diodesign/diodesign.github.io) is:
 
 *   Copyright &copy; 2026 Chris Williams.
 
 See the [terms of use](/license/) for information on redistribution and attribution requirements.
-
-## Credits
-
-This project uses the following open-source software:
-
-*   [Orama](https://github.com/oramasearch/orama), which is copyright &copy; 2023 OramaSearch Inc, and covered by the [Apache License, Version 2.0](https://github.com/oramasearch/orama/blob/main/LICENSE.md).
-*   [Marked](https://github.com/markedjs/marked), which is copyright &copy; 2018-present, MarkedJS, and copyright &copy; 2011-2018, Christopher Jeffrey. It is covered by the [MIT License](https://github.com/markedjs/marked/blob/master/LICENSE).
 
 ## Independence
 
