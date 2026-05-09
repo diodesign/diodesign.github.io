@@ -82,7 +82,7 @@
             console.error('AI Search: Initialization failed:', e);
             statusOverlay.style.display = 'none';
             cloudFallback.style.display = 'block';
-            cloudFallback.innerHTML = 'Neural link stalled. <a href="https://www.google.com/">Use Cloud Search &rarr;</a>';
+            cloudFallback.innerHTML = 'Neural link stalled. <a href="https://www.google.com/">Try web search instead &rarr;</a>';
         }
     }
 
@@ -109,7 +109,7 @@
 
             if (status !== 'readily' && status !== 'available') {
                 statusOverlay.style.display = 'flex';
-                statusOverlay.innerHTML = '<span><div class="search-spinner"></div>Downloading model weights (4GB)... please wait.</span>';
+                statusOverlay.innerHTML = '<span><div class="search-spinner"></div>Preparing neural core... please wait.</span>';
                 statusOverlay.style.cursor = 'wait';
                 searchInput.disabled = true;
 
@@ -155,7 +155,7 @@
         searchResults.style.display = 'block';
         searchBox.classList.remove('complete');
         searchReset.classList.remove('visible');
-        searchResults.innerHTML = '<p class="status"><div class="search-spinner"></div><em>Retrieving archives and consulting neural core...</em></p>';
+        searchResults.innerHTML = '<p class="status"><div class="search-spinner"></div><em>Retrieving lab archives and consulting neural core...</em></p>';
 
         try {
             // Use a broader search to ensure we don't miss relevant chunks
@@ -254,7 +254,7 @@
 
             searchBox.classList.add('complete');
             searchReset.classList.add('visible');
-            searchReset.innerHTML = '<a href="/">Ask another question &rarr;</a>';
+            searchReset.innerHTML = '<p class="ai-disclaimer">This answer was generated entirely by an AI within your web browser and can make mistakes.</p><p><a href="/">Ask another question &rarr;</a></p>';
         } catch (err) {
             console.error('AI Search: Inference failed', err);
             searchResults.innerHTML = '<p class="status">Neural link error. The lab core is unreachable.</p>';

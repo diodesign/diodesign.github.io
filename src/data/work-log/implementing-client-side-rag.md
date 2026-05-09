@@ -6,11 +6,11 @@ permalink: "implementing-client-side-rag.html"
 summary: "Surviving a 6,144 token limit with Orama and a fail-safe retrieval pipeline."
 ---
 
-After [integrating the Chrome Prompt API](/work-log/chrome-prompt-api-integration.html) with diodeaign.org, I quickly ran into an interesting brick wall of a challenge: the (right now) 6,144-token context window of the on-device Gemini Nano model. While 6K tokens might sound generous for a quick chat, it's nowhere near enough to hold the entire archive of the site to interrogate.
+After [integrating the Chrome Prompt API](/work-log/chrome-prompt-api-integration.html) with diodeaign.org to provide client-side AI site search, I quickly ran into an interesting brick wall of a challenge: the (right now) 6,144-token context window of the on-device Gemini Nano model. While 6K tokens might sound generous for a quick chat, it's nowhere near enough to hold the entire archive of the site to interrogate.
 
 If I just dumped every log entry into the combined user prompt and system prompt, the model would simply choke or truncate the most important bits.
 
-The solution is a client-side Retrieval-Augmented Generation (RAG) architecture. Instead of giving the AI everything, I only give it the snippets, or "chunks", that are actually relevant to the user's query.
+The solution is a client-side Retrieval-Augmented Generation (RAG) architecture. Instead of giving the AI everything when you're trying to search the site's archives, I only give it the snippets, or "chunks", that are actually relevant to your query.
 
 ### The indexing pipeline
 

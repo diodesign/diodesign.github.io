@@ -18,7 +18,7 @@ I took a rather circuitous route to get here. I graduated from the [University o
 
 ### Life as an IT journalist
 
-Then I found the perfect intersection of news and technology: I joined [_The Register_](https://www.theregister.com/), a UK-based IT news publication that has long been known for its acerbic take on all things enterprise IT and software development. We always advocated for our tens of millions of readers, the customers of the Big Tech vendors, rather than cheerleading the industry, and strived to be technical, practical, and entertaining. I kept in touch with tech by writing open-source software, speaking to engineers about their work, and using the tools our readers used.
+Then I found the perfect intersection of news and technology: I joined [_The Register_](https://www.theregister.com/), a UK-based IT news website that has long been known for its acerbic take on all things enterprise IT and software development. We always advocated for our tens of millions of readers, the customers of the Big Tech vendors, rather than cheerleading the industry, and strived to be technical, practical, and entertaining. I kept in touch with tech by writing open-source software, speaking to engineers about their work, and using the tools our readers used.
 
 ### Joining the Big Tech tent
 

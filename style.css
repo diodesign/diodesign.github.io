@@ -1,5 +1,5 @@
 html {
-    font-size: 1.44rem;
+    font-size: 1rem;
 }
 
 :root {
@@ -443,6 +443,14 @@ th {
 }
 
 .search-reset.visible {
+    display: block;
+}
+
+.ai-disclaimer {
+    color: var(--muted-color);
+    font-size: 0.75rem;
+    margin-bottom: 1rem;
+    line-height: 1.4;
     display: block;
 }
 
