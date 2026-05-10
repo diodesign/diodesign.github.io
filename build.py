@@ -69,9 +69,14 @@ def load_markdown(filename):
         metadata['content'] = markdown.markdown(post.content, extensions=['tables'])
         return metadata
 
+# Template cache — populated on first access, cleared at the start of each build
+TEMPLATE_CACHE = {}
+
 def load_template(filename):
-    with open(os.path.join(TEMPLATE_DIR, filename), 'r') as f:
-        return f.read()
+    if filename not in TEMPLATE_CACHE:
+        with open(os.path.join(TEMPLATE_DIR, filename), 'r') as f:
+            TEMPLATE_CACHE[filename] = f.read()
+    return TEMPLATE_CACHE[filename]
 
 def render_template(template, context):
     rendered = template
@@ -256,7 +261,7 @@ def get_file_mtimes():
                     pass
     
     # Also watch specific root files that affect the build or appearance
-    root_watches = ['build.py', 'style.css', 'splash.js']
+    root_watches = ['build.py', 'style.css', 'splash.js', 'search.js', 'characters.js']
     for f in root_watches:
         if os.path.exists(f):
             try:
@@ -289,6 +294,9 @@ def get_latest_log_entry():
 
 def build_site():
     """Performs the complete site build."""
+    # Clear template cache so stale templates aren't used across rebuilds
+    TEMPLATE_CACHE.clear()
+
     # Prepare for a fresh build
     prepare_output_directory()
 
@@ -360,44 +368,69 @@ def build_site():
     # Build search index for AI
     build_search_index()
 
-def chunk_text(text, max_chars=5000):
-    """Simple character-based chunking as a proxy for tokens."""
+def clean_markdown(text):
+    """Strips markdown and HTML syntax, leaving plain searchable prose."""
+    import re
+    # Remove fenced code blocks
+    text = re.sub(r'```[\s\S]*?```', '', text)
+    text = re.sub(r'`[^`]+`', '', text)
+    # Collapse inline links to their label text
+    text = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', text)
+    # Strip HTML tags
+    text = re.sub(r'<[^>]+>', '', text)
+    # Strip markdown syntax characters
+    text = re.sub(r'[*#_>~]', '', text)
+    # Normalise whitespace
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    return text.strip()
+
+
+def chunk_text(text, title='', date='', max_chars=4500):
+    """
+    Paragraph-boundary chunking.
+
+    Splits on blank lines so individual paragraphs are never severed.
+    Each chunk is prefixed with the entry title and date so that the LLM
+    always knows the source context even when reading a mid-article chunk.
+    """
+    header = f"{title}" + (f" ({date})" if date else '') + "\n\n" if title else ''
+    header_len = len(header)
+
+    paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
+
     chunks = []
-    lines = text.split('\n')
-    current_chunk = []
-    current_length = 0
-    
-    for line in lines:
-        if current_length + len(line) > max_chars and current_chunk:
-            chunks.append('\n'.join(current_chunk))
-            current_chunk = []
-            current_length = 0
-        current_chunk.append(line)
-        current_length += len(line) + 1
-        
-    if current_chunk:
-        chunks.append('\n'.join(current_chunk))
-    return chunks
+    current_paras = []
+    current_len = header_len
+
+    for para in paragraphs:
+        para_len = len(para) + 2  # +2 for the separating newlines
+        if current_len + para_len > max_chars and current_paras:
+            chunks.append(header + '\n\n'.join(current_paras))
+            current_paras = []
+            current_len = header_len
+        current_paras.append(para)
+        current_len += para_len
+
+    if current_paras:
+        chunks.append(header + '\n\n'.join(current_paras))
+
+    return chunks if chunks else [header.strip()]
+
 
 def build_search_index():
-    """Generates a search-index.json for client-side AI context."""
+    """Generates a search-index.json for client-side RAG + AI context."""
     import json
-    import re
 
     index = []
-    
-    def add_to_index(title, url, content):
-        # Strip markdown links, bold, etc. (basic)
-        content = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', content)
-        content = re.sub(r'[*#_`]', '', content)
-        
-        chunks = chunk_text(content)
-        for i, chunk in enumerate(chunks):
+
+    def add_to_index(title, url, raw_content, date=''):
+        cleaned = clean_markdown(raw_content)
+        for i, chunk in enumerate(chunk_text(cleaned, title=title, date=date)):
             index.append({
                 'title': title,
-                'url': url,
+                'url':   url,
                 'content': chunk,
-                'chunk': i
+                'chunk': i,
             })
 
     # Process regular pages
@@ -407,42 +440,36 @@ def build_search_index():
         if os.path.exists(path):
             with open(path, 'r') as f:
                 post = frontmatter.load(f)
-                name = page_file.replace('.md', '')
-                title = post.metadata.get('title', name.capitalize())
-                byline = post.metadata.get('byline', '')
+                name    = page_file.replace('.md', '')
+                title   = post.metadata.get('title', name.capitalize())
                 summary = post.metadata.get('summary', '')
-                date = post.metadata.get('date', '')
-                full_content = f"{title}\n{byline}\n{date}\n{summary}\n{post.content}"
-                
-                add_to_index(
-                    title,
-                    f'/{name}/',
-                    full_content
-                )
+                # Prepend the summary so it is always present in the first chunk
+                full_content = (f"{summary}\n\n" if summary else '') + post.content
+                add_to_index(title, f'/{name}/', full_content)
 
     # Process logs
     for log_dir, folder in [('work-log', 'work-log'), ('life-log', 'life-log')]:
         full_log_dir = os.path.join(DATA_DIR, log_dir)
         if os.path.exists(full_log_dir):
-            for filename in os.listdir(full_log_dir):
-                if filename.endswith('.md'):
-                    path = os.path.join(full_log_dir, filename)
-                    with open(path, 'r') as f:
-                        post = frontmatter.load(f)
-                        permalink = post.metadata.get('permalink', filename.replace('.md', '.html'))
-                        title = post.metadata.get('title', 'Untitled')
-                        byline = post.metadata.get('byline', '')
-                        summary = post.metadata.get('summary', '')
-                        date = post.metadata.get('date', '')
-                        
-                        # Combine title, byline, date, summary and content for indexing
-                        full_content = f"{title}\n{byline}\n{date}\n{summary}\n{post.content}"
-                        
-                        add_to_index(
-                            title,
-                            f'/{folder}/{permalink}',
-                            full_content
-                        )
+            for filename in sorted(os.listdir(full_log_dir)):
+                if not filename.endswith('.md'):
+                    continue
+                with open(os.path.join(full_log_dir, filename), 'r') as f:
+                    post      = frontmatter.load(f)
+                    permalink = post.metadata.get('permalink', filename.replace('.md', '.html'))
+                    title     = post.metadata.get('title', 'Untitled')
+                    byline    = post.metadata.get('byline', '')
+                    summary   = post.metadata.get('summary', '')
+                    date      = str(post.metadata.get('date', ''))
+                    # Lead with byline + summary for the first chunk
+                    preamble  = '\n'.join(filter(None, [byline, summary]))
+                    full_content = (preamble + '\n\n' if preamble else '') + post.content
+                    add_to_index(
+                        title,
+                        f'/{folder}/{permalink}',
+                        full_content,
+                        date=date,
+                    )
 
     index_path = os.path.join(OUTPUT_DIR, 'search-index.json')
     with open(index_path, 'w') as f:

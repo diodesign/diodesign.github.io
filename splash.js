@@ -5,6 +5,9 @@ let startTime = 0;
 let lastUpdate = 0;
 let lowCellTime = 0;
 let isMouseDown = false;
+let rafId = null;        // requestAnimationFrame handle
+let didStep = false;     // true when the CA advanced a generation this frame
+let needsRedraw = false; // true after resize() clears the canvas
 
 // Configuration constants
 const GRID_COLS = 320;
@@ -70,11 +73,21 @@ function init() {
     resetGrid();
     startTime = performance.now();
     lastUpdate = startTime;
+    // Paint the initial dot-matrix message immediately, before START_DELAY.
+    // The animation loop skips draw() unless didStep is true, so without this
+    // the canvas would stay blank until the first CA tick.
+    draw();
 }
 
 function resize() {
     width = canvas.width = canvas.parentElement.clientWidth;
     height = canvas.height = canvas.parentElement.clientHeight;
+    // Reallocate the pixel buffer to match the new canvas dimensions.
+    imageData = ctx.createImageData(width, height);
+    pixels = imageData.data;
+    // Setting canvas.width clears the canvas contents — flag a redraw so
+    // the dot-matrix message (or current CA frame) is restored immediately.
+    needsRedraw = true;
 }
 
 function drawMessage(lines) {
@@ -159,6 +172,7 @@ function fillAtMouse(e) {
 }
 
 function update(time) {
+    didStep = false;
     if (time - startTime < START_DELAY) return;
 
     // Transition cursor after delay
@@ -168,6 +182,7 @@ function update(time) {
 
     if (time - lastUpdate < TICK_RATE) return;
     lastUpdate = time;
+    didStep = true;
 
     let activeCells = 0;
 
@@ -225,30 +240,77 @@ function update(time) {
     }
 }
 
+// Pre-allocated pixel buffer — reused every frame to avoid GC pressure.
+// Recreated in resize() when canvas dimensions change.
+let imageData = null;
+let pixels = null; // Uint8ClampedArray view into imageData.data
+
+// Parse background hex colour once into RGB components.
+const _bg = colors.background.slice(1);
+const BG_R = parseInt(_bg.slice(0, 2), 16);
+const BG_G = parseInt(_bg.slice(2, 4), 16);
+const BG_B = parseInt(_bg.slice(4, 6), 16);
+
+/**
+ * Converts HSL to RGB. All inputs/outputs in [0..1] range.
+ * Avoids the browser style pipeline (no fillStyle string construction).
+ */
+function hslToRgb(h, s, l) {
+    const a = s * Math.min(l, 1 - l);
+    const f = (n) => {
+        const k = (n + h * 12) % 12;
+        return l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+    };
+    return [Math.round(f(0) * 255), Math.round(f(8) * 255), Math.round(f(4) * 255)];
+}
+
 function draw() {
-    ctx.fillStyle = colors.background;
-    ctx.fillRect(0, 0, width, height);
+    if (!imageData) return;
 
     const cellW = width / GRID_COLS;
     const cellH = height / GRID_ROWS;
+    const H = colors.yellow.h / 360; // normalised hue
 
-    for (let y = 0; y < GRID_ROWS; y++) {
-        const yOffset = y * GRID_COLS;
-        const dy = y * cellH + 0.5;
+    // Fill entire buffer with background colour.
+    for (let i = 0; i < pixels.length; i += 4) {
+        pixels[i] = BG_R;
+        pixels[i + 1] = BG_G;
+        pixels[i + 2] = BG_B;
+        pixels[i + 3] = 255;
+    }
 
-        for (let x = 0; x < GRID_COLS; x++) {
-            const intensity = colorGrid[yOffset + x];
-            if (intensity > 0.01) {
-                // Scale lightness from brand gold (50%) up to a bright gold (85%), avoiding pure white
-                const lightness = 50 + (intensity * 35);
-                // Keep saturation high (minimum 80%) to maintain the gold hue
-                const saturation = 100 - (intensity * 20);
+    // Paint active/fading cells directly into the pixel buffer.
+    for (let cy = 0; cy < GRID_ROWS; cy++) {
+        const yOffset = cy * GRID_COLS;
+        const py0 = Math.round(cy * cellH);
+        const py1 = Math.round((cy + 1) * cellH);
 
-                ctx.fillStyle = `hsl(${colors.yellow.h}, ${saturation}%, ${lightness}%)`;
-                ctx.fillRect(x * cellW + 0.5, dy, cellW - 0.5, cellH - 0.5);
+        for (let cx = 0; cx < GRID_COLS; cx++) {
+            const intensity = colorGrid[yOffset + cx];
+            if (intensity <= 0.01) continue;
+
+            // Scale lightness 50% → 85%, saturation 100% → 80%
+            const L = (50 + intensity * 35) / 100;
+            const S = (100 - intensity * 20) / 100;
+            const [r, g, b] = hslToRgb(H, S, L);
+
+            const px0 = Math.round(cx * cellW);
+            const px1 = Math.round((cx + 1) * cellW);
+
+            for (let py = py0; py < py1; py++) {
+                const rowBase = py * width * 4;
+                for (let px = px0; px < px1; px++) {
+                    const i = rowBase + px * 4;
+                    pixels[i] = r;
+                    pixels[i + 1] = g;
+                    pixels[i + 2] = b;
+                    pixels[i + 3] = 255;
+                }
             }
         }
     }
+
+    ctx.putImageData(imageData, 0, 0);
 }
 
 let isVisible = true;
@@ -266,15 +328,23 @@ document.addEventListener('visibilitychange', () => {
 function animate(time) {
     if (isVisible && isTabActive) {
         update(time);
-        draw();
+        // Repaint when the CA stepped OR when a resize just cleared the canvas.
+        if (didStep || needsRedraw) {
+            draw();
+            needsRedraw = false;
+        }
     }
-    requestAnimationFrame(animate);
+    rafId = requestAnimationFrame(animate);
 }
 
+// Debounced resize — avoids hammering the canvas on every pixel of a window drag.
+let _resizeTimer = null;
 window.addEventListener('resize', () => {
-    resize();
+    clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(resize, 100);
 });
 
+// ---- Mouse interaction ----
 canvas.addEventListener('mousedown', (e) => {
     isMouseDown = true;
     fillAtMouse(e);
@@ -285,13 +355,37 @@ window.addEventListener('mouseup', () => {
 });
 
 canvas.addEventListener('mousemove', (e) => {
-    if (isMouseDown) {
-        fillAtMouse(e);
-    }
+    if (isMouseDown) fillAtMouse(e);
 });
 
+// ---- Touch interaction ----
+function fillAtTouch(e) {
+    if (performance.now() - startTime < START_DELAY) return;
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    for (const touch of e.changedTouches) {
+        const gx = (touch.clientX - rect.left) / width * GRID_COLS;
+        const gy = (touch.clientY - rect.top) / height * GRID_ROWS;
+        fillCluster(gx, gy, 4);
+    }
+}
+
+canvas.addEventListener('touchstart', fillAtTouch, { passive: false });
+canvas.addEventListener('touchmove', fillAtTouch, { passive: false });
+
+// ---- Pause loop when canvas is collapsed after a search ----
+const splashWrapper = document.getElementById('splash-canvas-wrapper');
+if (splashWrapper) {
+    const collapseObserver = new MutationObserver(() => {
+        if (splashWrapper.classList.contains('collapsed')) {
+            cancelAnimationFrame(rafId);
+            rafId = null;
+        } else if (!rafId) {
+            rafId = requestAnimationFrame(animate);
+        }
+    });
+    collapseObserver.observe(splashWrapper, { attributes: true, attributeFilter: ['class'] });
+}
+
 init();
-requestAnimationFrame(animate);
-
-
-
+rafId = requestAnimationFrame(animate);
