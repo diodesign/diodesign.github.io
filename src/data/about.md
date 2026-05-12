@@ -14,7 +14,7 @@ Our current public projects include:
 | Project | Description |
 |---------|-------------|
 | [Diosix](https://diosix.org/) | A lightweight, bare-metal multiprocessor hypervisor written in Zig that focuses on providing a secure, distributed foundation for isolating RISC-V workloads within a minimalist trusted computing base. |
-| [diodesign.org](https://github.com/diodesign/diodesign.github.io) | This website, featuring a custom dot-matrix cellular-automata splash screen and a client-side RAG-LLM site search interface built on Chrome's experimental Prompt API. This AI-powered search is only available for compatible browsers and systems. |
+| [diodesign.org](https://github.com/diodesign/diodesign.github.io) | This website, featuring a custom dot-matrix cellular-automata splash screen and a client-side RAG-LLM site search interface built on Chrome's experimental Prompt API. This AI-powered search uses a model built into your web browser to answer questions about the site's content. It is only available for compatible browsers and systems. |
 
 ## People
 
