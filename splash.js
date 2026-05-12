@@ -80,8 +80,17 @@ function init() {
 }
 
 function resize() {
-    width = canvas.width = canvas.parentElement.clientWidth;
-    height = canvas.height = canvas.parentElement.clientHeight;
+    const newWidth = canvas.parentElement.clientWidth;
+    const newHeight = canvas.parentElement.clientHeight;
+
+    // Avoid crashing if the canvas is hidden or collapsed (e.g. during search results)
+    if (!newWidth || !newHeight || newWidth <= 0 || newHeight <= 0) {
+        return;
+    }
+
+    width = canvas.width = newWidth;
+    height = canvas.height = newHeight;
+
     // Reallocate the pixel buffer to match the new canvas dimensions.
     imageData = ctx.createImageData(width, height);
     pixels = imageData.data;
@@ -164,7 +173,7 @@ function sprinkle() {
 }
 
 function fillAtMouse(e) {
-    if (performance.now() - startTime < START_DELAY) return;
+    if (!width || !height || performance.now() - startTime < START_DELAY) return;
     const rect = canvas.getBoundingClientRect();
     const mx = (e.clientX - rect.left) / width * GRID_COLS;
     const my = (e.clientY - rect.top) / height * GRID_ROWS;
@@ -360,7 +369,7 @@ canvas.addEventListener('mousemove', (e) => {
 
 // ---- Touch interaction ----
 function fillAtTouch(e) {
-    if (performance.now() - startTime < START_DELAY) return;
+    if (!width || !height || performance.now() - startTime < START_DELAY) return;
     e.preventDefault();
     const rect = canvas.getBoundingClientRect();
     for (const touch of e.changedTouches) {
