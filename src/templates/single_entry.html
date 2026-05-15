@@ -1,5 +1,8 @@
 <article class="container log-section single-entry">
     <header class="page-header">
+        <nav class="breadcrumbs">
+            {{ breadcrumbs }}
+        </nav>
         <time datetime="{{ entry_date }}">{{ entry_date }}</time>
         <h1>{{ entry_title }}</h1>
         <p class="subtitle">By {{ entry_byline }}</p>
@@ -10,6 +13,8 @@
     </div>
 
     <footer class="entry-footer">
-        <a href="./" class="back-link">&larr; Back to log</a>
+        <nav class="breadcrumbs">
+            {{ breadcrumbs }}
+        </nav>
     </footer>
 </article>

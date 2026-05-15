@@ -1,0 +1,6 @@
+- title: Work log
+  subtitle: Debugging the universe, one line at a time
+  path: src/data/work-log/
+- title: Life log
+  subtitle: Mostly harmless
+  path: src/data/life-log/

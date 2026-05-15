@@ -1,9 +1,16 @@
 <article class="container log-section">
     <header class="page-header">
+        <nav class="breadcrumbs">
+            {{ breadcrumbs }}
+        </nav>
         <h1>{{ log_title }}</h1>
         <p class="subtitle">{{ log_subtitle }}</p>
     </header>
-    
+
+    <div class="sub-logs">
+        {{ sub_logs }}
+    </div>
+
     <div class="log-entries">
         {{ log_entries }}
     </div>

@@ -46,7 +46,7 @@ class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
 DATA_DIR = 'src/data'
 TEMPLATE_DIR = 'src/templates'
 OUTPUT_DIR = '_site'
-LOG_ENTRIES_PER_PAGE = 5
+LOG_ENTRIES_PER_PAGE = 3
 
 # Global context for templates
 LATEST_LOG_CONTEXT = {
@@ -111,49 +111,96 @@ def build_page(template_name, context, output_path):
         f.write(final_html)
     print(f"Built {output_path}")
 
-def build_log_pages(data_subdir, title, subtitle, folder_name):
+all_entries = []
+
+def build_log_hierarchy(data_path, title, subtitle, folder_path, breadcrumbs=None):
     """
-    Builds log pages from a directory of Markdown files.
+    Recursively builds log pages starting from data_path.
+    data_path is the relative path from project root (e.g. 'src/data/work-log/')
+    folder_path is the path in the URL (e.g. 'work-log')
     """
-    entries = []
-    log_dir = os.path.join(DATA_DIR, data_subdir)
+    if breadcrumbs is None:
+        breadcrumbs = [{'title': 'Home', 'url': '/'}]
     
-    if os.path.exists(log_dir) and os.path.isdir(log_dir):
-        for filename in os.listdir(log_dir):
-            if filename.endswith('.md'):
-                path = os.path.join(log_dir, filename)
-                with open(path, 'r') as f:
+    # Generate HTML for breadcrumbs (parent path)
+    breadcrumb_html = ' <span class="sep">&gt;</span> '.join([f'<a href="{b["url"]}">{b["title"]}</a>' for b in breadcrumbs])
+    
+    # For entries, we append the CURRENT section title to the breadcrumb trail
+    entry_breadcrumb_html = f'{breadcrumb_html} <span class="sep">&gt;</span> <a href="/{folder_path}/">{title}</a>'
+
+    global all_entries
+    local_entries = []
+    sub_logs = []
+    
+    if os.path.exists(data_path) and os.path.isdir(data_path):
+        # Use sorted listdir for deterministic processing
+        for item in sorted(os.listdir(data_path)):
+            if item.startswith('_'): continue
+            
+            full_path = os.path.join(data_path, item)
+            if os.path.isfile(full_path) and item.endswith('.md'):
+                with open(full_path, 'r') as f:
                     post = frontmatter.load(f)
                     entry = post.metadata
-                    entry['content'] = markdown.markdown(post.content)
+                    entry['content_raw'] = post.content # Keep for search index
+                    entry['content'] = markdown.markdown(post.content, extensions=['tables'])
                     # Fallback for permalink if not in frontmatter
                     if 'permalink' not in entry:
-                        entry['permalink'] = filename.replace('.md', '.html')
-                    entry['folder'] = folder_name
-                    entries.append(entry)
+                        entry['permalink'] = item.replace('.md', '.html')
+                    entry['folder'] = folder_path
+                    local_entries.append(entry)
+                    # Don't re-append to all_entries here as we did it in the collection phase
+            
+            elif os.path.isdir(full_path):
+                book_path = os.path.join(full_path, '_book.yaml')
+                if os.path.exists(book_path):
+                    with open(book_path, 'r') as f:
+                        books = yaml.safe_load(f)
+                        if books and len(books) > 0:
+                            book = books[0]
+                            sub_title = book.get('title', item)
+                            sub_subtitle = book.get('subtitle', '')
+                            sub_folder_path = os.path.join(folder_path, item)
+                            
+                            # Recursion with updated breadcrumbs
+                            new_breadcrumbs = breadcrumbs + [{'title': title, 'url': f'/{folder_path}/'}]
+                            build_log_hierarchy(full_path, sub_title, sub_subtitle, sub_folder_path, breadcrumbs=new_breadcrumbs)
+                            
+                            sub_logs.append({
+                                'title': sub_title,
+                                'subtitle': sub_subtitle,
+                                'url': f"/{sub_folder_path}/"
+                            })
 
-    # Sort entries by date (descending)
-    entries.sort(key=lambda x: str(x.get('date', '')), reverse=True)
+    # Sort local entries by date (descending)
+    local_entries.sort(key=lambda x: str(x.get('date', '')), reverse=True)
     
     # Build individual entry pages
-    for entry in entries:
+    for entry in local_entries:
         entry_context = {
             'page_title': entry.get('title', 'Untitled'),
             'entry_title': entry.get('title', 'Untitled'),
             'entry_date': entry.get('date', ''),
             'entry_byline': entry.get('byline', ''),
-            'entry_content': entry['content']
+            'entry_content': entry['content'],
+            'breadcrumbs': entry_breadcrumb_html
         }
-        build_page('single_entry.html', entry_context, os.path.join(folder_name, entry['permalink']))
+        build_page('single_entry.html', entry_context, os.path.join(folder_path, entry['permalink']))
 
-    # Build list pages
-    total_pages = math.ceil(len(entries) / LOG_ENTRIES_PER_PAGE)
+    # Render sub-logs HTML snippet
+    sub_log_template = load_template('sub_log_item.html')
+    sub_logs_html = ""
+    for sl in sub_logs:
+        sub_logs_html += render_template(sub_log_template, sl)
+
+    # Build list pages (paginated)
+    total_pages = math.ceil(len(local_entries) / LOG_ENTRIES_PER_PAGE)
     if total_pages == 0: total_pages = 1
     
     for page_num in range(1, total_pages + 1):
         start_idx = (page_num - 1) * LOG_ENTRIES_PER_PAGE
         end_idx = start_idx + LOG_ENTRIES_PER_PAGE
-        page_entries = entries[start_idx:end_idx]
+        page_entries = local_entries[start_idx:end_idx]
         
         entry_template = load_template('log_entry.html')
         entries_html = ""
@@ -177,14 +224,14 @@ def build_log_pages(data_subdir, title, subtitle, folder_name):
             'page_title': title,
             'log_title': title,
             'log_subtitle': subtitle,
+            'sub_logs': sub_logs_html,
             'log_entries': entries_html,
-            'pagination': pagination_html
+            'pagination': pagination_html,
+            'breadcrumbs': breadcrumb_html
         }
         
         output_name = "index.html" if page_num == 1 else f"p{page_num}.html"
-        build_page('log.html', context, os.path.join(folder_name, output_name))
-    
-    return entries
+        build_page('log.html', context, os.path.join(folder_path, output_name))
 
 def generate_rss(entries):
     """Generates an RSS 2.0 feed from the given entries."""
@@ -271,26 +318,11 @@ def get_file_mtimes():
     return mtimes
 
 def get_latest_log_entry():
-    """Finds the most recent log entry across all log directories."""
-    entries = []
-    for log_dir, folder_name in [('work-log', 'work-log'), ('life-log', 'life-log')]:
-        path = os.path.join(DATA_DIR, log_dir)
-        if os.path.exists(path) and os.path.isdir(path):
-            for filename in os.listdir(path):
-                if filename.endswith('.md'):
-                    with open(os.path.join(path, filename), 'r') as f:
-                        post = frontmatter.load(f)
-                        entry = post.metadata
-                        if 'permalink' not in entry:
-                            entry['permalink'] = filename.replace('.md', '.html')
-                        entry['folder'] = folder_name
-                        entries.append(entry)
-    
-    if not entries:
+    """Finds the most recent log entry from all collected entries."""
+    if not all_entries:
         return None
-        
-    entries.sort(key=lambda x: str(x.get('date', '')), reverse=True)
-    return entries[0]
+    sorted_all = sorted(all_entries, key=lambda x: str(x.get('date', '')), reverse=True)
+    return sorted_all[0]
 
 def build_site():
     """Performs the complete site build."""
@@ -300,7 +332,36 @@ def build_site():
     # Prepare for a fresh build
     prepare_output_directory()
 
-    # Populate latest log context for footer
+    # 1. First, collect all entries from the hierarchy without building pages
+    global all_entries
+    all_entries = []
+    root_book = load_data('_book.yaml')
+    
+    # We need a non-destructive way to collect all entries
+    # I'll add a 'collect_only' flag to build_log_hierarchy or just call it after collecting
+    def collect_all_entries(data_path, folder_path):
+        if os.path.exists(data_path) and os.path.isdir(data_path):
+            for item in sorted(os.listdir(data_path)):
+                if item.startswith('_'): continue
+                full_path = os.path.join(data_path, item)
+                if os.path.isfile(full_path) and item.endswith('.md'):
+                    with open(full_path, 'r') as f:
+                        post = frontmatter.load(f)
+                        entry = post.metadata
+                        entry['permalink'] = entry.get('permalink', item.replace('.md', '.html'))
+                        entry['folder'] = folder_path
+                        all_entries.append(entry)
+                elif os.path.isdir(full_path):
+                    book_path = os.path.join(full_path, '_book.yaml')
+                    if os.path.exists(book_path):
+                        collect_all_entries(full_path, os.path.join(folder_path, item))
+
+    for section in root_book:
+        data_path = section['path']
+        url_folder = os.path.basename(data_path.rstrip('/'))
+        collect_all_entries(data_path, url_folder)
+
+    # 2. Populate latest log context for footer
     global LATEST_LOG_CONTEXT
     latest = get_latest_log_entry()
     if latest:
@@ -308,6 +369,12 @@ def build_site():
             'latest_url': f"/{latest['folder']}/{latest['permalink']}",
             'latest_title': latest.get('title', 'Untitled')
         }
+
+    # 3. Now build everything (pages will now have the correct footer context)
+    for section in root_book:
+        data_path = section['path']
+        url_folder = os.path.basename(data_path.rstrip('/'))
+        build_log_hierarchy(data_path, section['title'], section['subtitle'], url_folder, breadcrumbs=[{'title': 'Home', 'url': '/'}])
 
     # Build splash page
     build_page('index.html', {'page_title': 'Home'}, 'index.html')
@@ -327,36 +394,29 @@ def build_site():
         'page_subtitle': contact_data['subtitle'],
         'page_content': contact_data['content']
     }, 'contact/index.html')
-    
-    # Build logs
-    all_entries = []
-    all_entries.extend(build_log_pages('work-log', 'Work log', 'Debugging the universe, one line at a time', 'work-log'))
-    all_entries.extend(build_log_pages('life-log', 'Life log', 'Mostly harmless', 'life-log'))
 
     # Generate RSS feed
     generate_rss(all_entries)
 
-    # Build legal and contributor pages
-    contrib_data = load_markdown('contributors.md')
-    build_page('page.html', {
-        'page_title': contrib_data['title'],
-        'page_subtitle': contrib_data['subtitle'],
-        'page_content': contrib_data['content']
-    }, 'contributors/index.html')
+    # Build all top-level markdown files as static pages
+    for filename in os.listdir(DATA_DIR):
+        if filename.endswith('.md') and not filename.startswith('_'):
+            name = filename.replace('.md', '')
+            data = load_markdown(filename)
+            template = data.get('template', 'page.html')
+            
+            # Special case for root index if it ever moved to markdown
+            output_path = "index.html" if name == "index" else f"{name}/index.html"
+            
+            build_page(template, {
+                'page_title': data.get('title', name.capitalize()),
+                'page_subtitle': data.get('subtitle', ''),
+                'page_content': data['content']
+            }, output_path)
 
-    license_data = load_markdown('license.md')
-    build_page('page.html', {
-        'page_title': license_data['title'],
-        'page_subtitle': license_data['subtitle'],
-        'page_content': license_data['content']
-    }, 'license/index.html')
-
-    privacy_data = load_markdown('privacy.md')
-    build_page('page.html', {
-        'page_title': privacy_data['title'],
-        'page_subtitle': privacy_data['subtitle'],
-        'page_content': privacy_data['content']
-    }, 'privacy/index.html')
+    # If index.html isn't a markdown file, build it from template
+    if not os.path.exists(os.path.join(DATA_DIR, 'index.md')):
+        build_page('index.html', {'page_title': 'Home'}, 'index.html')
 
     # Copy static assets
     static_assets = ['style.css', 'splash.js', 'characters.js', 'search.js', 'favicon.ico', 'CNAME', 'keybase.txt']
@@ -433,43 +493,28 @@ def build_search_index():
                 'chunk': i,
             })
 
-    # Process regular pages
-    pages = ['about.md', 'contact.md', 'contributors.md', 'license.md', 'privacy.md']
-    for page_file in pages:
-        path = os.path.join(DATA_DIR, page_file)
-        if os.path.exists(path):
+    # Process static pages automatically
+    for filename in os.listdir(DATA_DIR):
+        if filename.endswith('.md') and not filename.startswith('_'):
+            path = os.path.join(DATA_DIR, filename)
             with open(path, 'r') as f:
                 post = frontmatter.load(f)
-                name    = page_file.replace('.md', '')
-                title   = post.metadata.get('title', name.capitalize())
+                name = filename.replace('.md', '')
+                title = post.metadata.get('title', name.capitalize())
                 summary = post.metadata.get('summary', '')
                 # Prepend the summary so it is always present in the first chunk
                 full_content = (f"{summary}\n\n" if summary else '') + post.content
-                add_to_index(title, f'/{name}/', full_content)
+                url = "/" if name == "index" else f"/{name}/"
+                add_to_index(title, url, full_content)
 
-    # Process logs
-    for log_dir, folder in [('work-log', 'work-log'), ('life-log', 'life-log')]:
-        full_log_dir = os.path.join(DATA_DIR, log_dir)
-        if os.path.exists(full_log_dir):
-            for filename in sorted(os.listdir(full_log_dir)):
-                if not filename.endswith('.md'):
-                    continue
-                with open(os.path.join(full_log_dir, filename), 'r') as f:
-                    post      = frontmatter.load(f)
-                    permalink = post.metadata.get('permalink', filename.replace('.md', '.html'))
-                    title     = post.metadata.get('title', 'Untitled')
-                    byline    = post.metadata.get('byline', '')
-                    summary   = post.metadata.get('summary', '')
-                    date      = str(post.metadata.get('date', ''))
-                    # Lead with byline + summary for the first chunk
-                    preamble  = '\n'.join(filter(None, [byline, summary]))
-                    full_content = (preamble + '\n\n' if preamble else '') + post.content
-                    add_to_index(
-                        title,
-                        f'/{folder}/{permalink}',
-                        full_content,
-                        date=date,
-                    )
+    # Process logs from global all_entries
+    for entry in all_entries:
+        add_to_index(
+            entry.get('title', 'Untitled'),
+            f"/{entry['folder']}/{entry['permalink']}",
+            entry.get('content_raw', ''),
+            date=str(entry.get('date', ''))
+        )
 
     index_path = os.path.join(OUTPUT_DIR, 'search-index.json')
     with open(index_path, 'w') as f:

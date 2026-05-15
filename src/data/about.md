@@ -13,13 +13,13 @@ Our current public projects include:
 
 | Project | Description |
 |---------|-------------|
-| [Diosix](https://diosix.org/) | A lightweight, bare-metal multiprocessor hypervisor written in Zig that focuses on providing a secure, distributed foundation for isolating RISC-V workloads within a minimalist trusted computing base. |
-| [diodesign.org](https://github.com/diodesign/diodesign.github.io) | This website, featuring a custom dot-matrix cellular-automata splash screen and a client-side RAG-LLM site search interface built on Chrome's experimental Prompt API. This AI-powered search uses a model built into your web browser to answer questions about the site's content. It is only available for compatible browsers and systems. |
+| [Diosix](https://diosix.org/) | A lightweight, bare-metal multiprocessor hypervisor written in Zig that focuses on providing a secure, distributed foundation for isolating RISC-V workloads with a minimalist trusted computing base. |
+| [diodesign.org](https://github.com/diodesign/diodesign.github.io) | This website, featuring a custom dot-matrix cellular-automata splash screen and a client-side RAG-LLM site search built on Chrome's experimental Prompt API. This AI-powered search uses a model built into your web browser to answer questions about the site's content. It is only available for compatible browsers and systems. |
 
 ## People
 
 | Person | Background |
 |---------|-------------|
-| [Chris Williams](/contact/) | A San Francisco-based technical editor in [Google Cloud](https://cloud.google.com/) with over 20 years of experience in professional publishing and open-source systems engineering. |
+| [Chris Williams](/contact/) | A San Francisco-based technical editor at Google with more than 20 years of experience in professional publishing and open-source systems engineering. |
 
 You can follow our updates using the [RSS feed](/rss.xml).
