@@ -51,12 +51,12 @@ This repository includes a GitHub Actions workflow in `.github/workflows/deploy.
 
 ## Managing content
 
-### Hierarchical Logs and Series
+### Hierarchical logs and series
 
 The log system supports nested folders and multi-part series (like a book or function-by-function commentary).
 
-1.  **Top-level Sections**: Defined in `src/data/_book.yaml`. Each entry specifies a `title`, `subtitle`, and the `path` to the log folder.
-2.  **Sub-sections (Series)**: Any subdirectory within a log folder can become its own sub-section if it contains its own `_book.yaml`.
+1.  **Top-level sections**: Defined in `src/data/_book.yaml`. Each entry specifies a `title`, `subtitle`, and the `path` to the log folder.
+2.  **Sub-sections (series)**: Any subdirectory within a log folder can become its own sub-section if it contains its own `_book.yaml`.
 3.  **Discovery**: The build script automatically crawls these directories. If it finds a `_book.yaml`, it generates a new paginated list page for that sub-section.
 4.  **Linking**: Parent log pages (like the Work Log) automatically detect sub-sections and display a "Series" link at the top of their list.
 
@@ -75,6 +75,7 @@ To add a new entry to a log or sub-log:
 3.  The build script will handle sorting (by date) and pagination (3 entries per page).
 
 Example entry file:
+
 ```markdown
 ---
 title: "My New Entry"
