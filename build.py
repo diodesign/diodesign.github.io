@@ -10,7 +10,8 @@ def setup_dependencies():
     deps = {
         'yaml': 'PyYAML',
         'frontmatter': 'python-frontmatter',
-        'markdown': 'markdown'
+        'markdown': 'markdown',
+        'pygments': 'pygments'
     }
     for module, package in deps.items():
         try:
@@ -33,6 +34,10 @@ import socketserver
 import datetime
 import email.utils
 from xml.sax.saxutils import escape
+from pygments.formatters import HtmlFormatter
+from pygments.style import Style
+from pygments.token import Keyword, Name, Comment, String, Error, \
+     Number, Operator, Generic, Whitespace, Punctuation
 
 class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
     """Custom handler to disable browser caching during development."""
@@ -66,7 +71,7 @@ def load_markdown(filename):
     with open(path, 'r') as f:
         post = frontmatter.load(f)
         metadata = post.metadata
-        metadata['content'] = markdown.markdown(post.content, extensions=['tables'])
+        metadata['content'] = markdown.markdown(post.content, extensions=['tables', 'codehilite', 'fenced_code', 'def_list'])
         return metadata
 
 # Template cache — populated on first access, cleared at the start of each build
@@ -113,7 +118,7 @@ def build_page(template_name, context, output_path):
 
 all_entries = []
 
-def build_log_hierarchy(data_path, title, subtitle, folder_path, breadcrumbs=None):
+def build_log_hierarchy(data_path, title, subtitle, folder_path, breadcrumbs=None, sort_order='descending'):
     """
     Recursively builds log pages starting from data_path.
     data_path is the relative path from project root (e.g. 'src/data/work-log/')
@@ -143,7 +148,7 @@ def build_log_hierarchy(data_path, title, subtitle, folder_path, breadcrumbs=Non
                     post = frontmatter.load(f)
                     entry = post.metadata
                     entry['content_raw'] = post.content # Keep for search index
-                    entry['content'] = markdown.markdown(post.content, extensions=['tables'])
+                    entry['content'] = markdown.markdown(post.content, extensions=['tables', 'codehilite', 'fenced_code', 'def_list'])
                     # Fallback for permalink if not in frontmatter
                     if 'permalink' not in entry:
                         entry['permalink'] = item.replace('.md', '.html')
@@ -162,9 +167,10 @@ def build_log_hierarchy(data_path, title, subtitle, folder_path, breadcrumbs=Non
                             sub_subtitle = book.get('subtitle', '')
                             sub_folder_path = os.path.join(folder_path, item)
                             
-                            # Recursion with updated breadcrumbs
+                            # Recursion with updated breadcrumbs and sort order
                             new_breadcrumbs = breadcrumbs + [{'title': title, 'url': f'/{folder_path}/'}]
-                            build_log_hierarchy(full_path, sub_title, sub_subtitle, sub_folder_path, breadcrumbs=new_breadcrumbs)
+                            sub_sort_order = book.get('sort', 'descending')
+                            build_log_hierarchy(full_path, sub_title, sub_subtitle, sub_folder_path, breadcrumbs=new_breadcrumbs, sort_order=sub_sort_order)
                             
                             sub_logs.append({
                                 'title': sub_title,
@@ -172,8 +178,9 @@ def build_log_hierarchy(data_path, title, subtitle, folder_path, breadcrumbs=Non
                                 'url': f"/{sub_folder_path}/"
                             })
 
-    # Sort local entries by date (descending)
-    local_entries.sort(key=lambda x: str(x.get('date', '')), reverse=True)
+    # Sort local entries by date
+    is_descending = sort_order != 'ascending'
+    local_entries.sort(key=lambda x: str(x.get('date', '')), reverse=is_descending)
     
     # Build individual entry pages
     for entry in local_entries:
@@ -212,11 +219,13 @@ def build_log_hierarchy(data_path, title, subtitle, folder_path, breadcrumbs=Non
             page_links = []
             if page_num > 1:
                 prev_link = "index.html" if page_num == 2 else f"p{page_num-1}.html"
-                page_links.append(f'<a href="{prev_link}" class="page-link">&larr; Newer</a>')
+                label = "&larr; Newer" if is_descending else "&larr; Older"
+                page_links.append(f'<a href="{prev_link}" class="page-link">{label}</a>')
             
             if page_num < total_pages:
                 next_link = f"p{page_num+1}.html"
-                page_links.append(f'<a href="{next_link}" class="page-link">Older &rarr;</a>')
+                label = "Older &rarr;" if is_descending else "Newer &rarr;"
+                page_links.append(f'<a href="{next_link}" class="page-link">{label}</a>')
             
             pagination_html = ' <span class="separator">|</span> '.join(page_links)
         
@@ -350,6 +359,7 @@ def build_site():
                         entry = post.metadata
                         entry['permalink'] = entry.get('permalink', item.replace('.md', '.html'))
                         entry['folder'] = folder_path
+                        entry['content_raw'] = post.content
                         all_entries.append(entry)
                 elif os.path.isdir(full_path):
                     book_path = os.path.join(full_path, '_book.yaml')
@@ -374,7 +384,8 @@ def build_site():
     for section in root_book:
         data_path = section['path']
         url_folder = os.path.basename(data_path.rstrip('/'))
-        build_log_hierarchy(data_path, section['title'], section['subtitle'], url_folder, breadcrumbs=[{'title': 'Home', 'url': '/'}])
+        sort_order = section.get('sort', 'descending')
+        build_log_hierarchy(data_path, section['title'], section['subtitle'], url_folder, breadcrumbs=[{'title': 'Home', 'url': '/'}], sort_order=sort_order)
 
     # Build splash page
     build_page('index.html', {'page_title': 'Home'}, 'index.html')
@@ -428,18 +439,115 @@ def build_site():
     # Build search index for AI
     build_search_index()
 
+    # Generate syntax highlighting CSS
+    generate_syntax_css()
+
+class DioDesignStyle(Style):
+    """Custom Pygments style matching the site's gold and purple theme."""
+    background_color = "#120720" # Deeper purple than site bg
+    highlight_color = "#4b0082"  # Site accent color
+    
+    styles = {
+        Whitespace:                "#f0f0f0",
+        Comment:                   "italic #8e7fb0", # Site muted color
+        Comment.Preproc:           "noitalic #ffd700",
+        
+        Keyword:                   "bold #ffd700",   # Site highlight color (Gold)
+        Keyword.Pseudo:            "nobold",
+        Keyword.Type:              "nobold #66D9EF", # Soft blue for types
+        
+        Operator:                  "#ffd700",
+        Punctuation:               "#f0f0f0",
+        
+        Name:                      "#f0f0f0",
+        Name.Builtin:              "#66D9EF",
+        Name.Function:             "#ffd700",
+        Name.Class:                "bold #ffd700",
+        Name.Namespace:            "#f0f0f0",
+        Name.Exception:            "bold #ffd700",
+        Name.Variable:             "#f0f0f0",
+        Name.Constant:             "#ae81ff",
+        Name.Label:                "#ffd700",
+        Name.Entity:               "#ae81ff",
+        Name.Attribute:            "#ffd700",
+        Name.Tag:                  "#ffd700",
+        Name.Decorator:            "#ffd700",
+        
+        String:                    "#a5ff90", # Vibrant green for strings
+        String.Doc:                "italic #8e7fb0",
+        String.Interpol:           "#a5ff90",
+        String.Escape:             "#ae81ff",
+        String.Regex:              "#ae81ff",
+        String.Symbol:             "#ae81ff",
+        String.Other:              "#a5ff90",
+        
+        Number:                    "#ae81ff", # Purple for numbers
+        
+        Generic.Heading:           "bold #f0f0f0",
+        Generic.Subheading:        "bold #8e7fb0",
+        Generic.Deleted:           "#f92672",
+        Generic.Inserted:          "#a6e22e",
+        Generic.Error:             "#f92672",
+        Generic.Emph:              "italic",
+        Generic.Strong:            "bold",
+        Generic.Prompt:            "bold #8e7fb0",
+        Generic.Output:            "#f0f0f0",
+        Generic.Traceback:         "#f92672",
+        
+        Error:                     "border:#f92672"
+    }
+
+def generate_syntax_css():
+    """Generates the CSS for syntax highlighting using Pygments."""
+    formatter = HtmlFormatter(style=DioDesignStyle)
+    css_content = formatter.get_style_defs('.codehilite')
+    
+    # Add some basic styling for the code block containers
+    extra_css = """
+.codehilite {
+    background: #120720;
+    padding: 1.25rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    overflow-x: auto;
+    font-family: 'ui-monospace', 'Cascadia Code', 'Source Code Pro', 'Menlo', 'Consolas', monospace;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    border: 1px solid rgba(255, 215, 0, 0.15); /* Subtle gold border */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+.codehilite pre {
+    margin: 0;
+    white-space: pre;
+}
+/* Scrollbar styling for code blocks */
+.codehilite::-webkit-scrollbar {
+    height: 8px;
+}
+.codehilite::-webkit-scrollbar-track {
+    background: #120720;
+    border-radius: 0 0 12px 12px;
+}
+.codehilite::-webkit-scrollbar-thumb {
+    background: #4b0082;
+    border-radius: 10px;
+}
+.codehilite::-webkit-scrollbar-thumb:hover {
+    background: #ffd700;
+}
+"""
+    css_path = os.path.join(OUTPUT_DIR, 'syntax.css')
+    with open(css_path, 'w') as f:
+        f.write(css_content + extra_css)
+    print(f"Built syntax.css with custom diodesign theme")
+
 def clean_markdown(text):
     """Strips markdown and HTML syntax, leaving plain searchable prose."""
     import re
-    # Remove fenced code blocks
-    text = re.sub(r'```[\s\S]*?```', '', text)
-    text = re.sub(r'`[^`]+`', '', text)
     # Collapse inline links to their label text
     text = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', text)
     # Strip HTML tags
     text = re.sub(r'<[^>]+>', '', text)
-    # Strip markdown syntax characters
-    text = re.sub(r'[*#_>~]', '', text)
     # Normalise whitespace
     text = re.sub(r'\n{3,}', '\n\n', text)
     return text.strip()
@@ -492,6 +600,13 @@ def build_search_index():
                 'content': chunk,
                 'chunk': i,
             })
+
+    # Index the home page specifically
+    add_to_index(
+        "Home",
+        "/",
+        "the diodesign lab. Synthesizing silicon and intelligence through low-level systems experimentation."
+    )
 
     # Process static pages automatically
     for filename in os.listdir(DATA_DIR):
