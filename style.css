@@ -220,9 +220,38 @@ footer {
 .content ol,
 .log-content ol,
 .log-content-full ol,
-.search-results ol {
+.search-results ol,
+.content dl,
+.log-content dl,
+.log-content-full dl,
+.search-results dl {
     margin-bottom: 1.25rem;
+}
+
+.content ul,
+.log-content ul,
+.log-content-full ul,
+.search-results ul,
+.content ol,
+.log-content ol,
+.log-content-full ol,
+.search-results ol {
     padding-left: 1.5rem;
+}
+
+.content dt,
+.log-content dt,
+.log-content-full dt {
+    font-weight: 700;
+    color: var(--highlight-color);
+    margin-top: 1.25rem;
+}
+
+.content dd,
+.log-content dd,
+.log-content-full dd {
+    margin-left: 1.5rem;
+    margin-bottom: 0.75rem;
 }
 
 .content>*:last-child,
