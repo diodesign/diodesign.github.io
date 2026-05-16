@@ -4,6 +4,7 @@ let width, height;
 let startTime = 0;
 let lastUpdate = 0;
 let lowCellTime = 0;
+let nextSprinkleDelay = 0;
 let isMouseDown = false;
 let rafId = null;        // requestAnimationFrame handle
 let didStep = false;     // true when the CA advanced a generation this frame
@@ -14,16 +15,20 @@ const GRID_COLS = 320;
 const GRID_ROWS = 82;
 const TOTAL_CELLS = GRID_COLS * GRID_ROWS;
 const TICK_RATE = 1000 / 60; // ms between CA steps
-const START_DELAY = 4000; // milliseconds delay for initial logo
+const START_DELAY = 2000; // milliseconds delay for initial logo
 const SPRINKLE_DELAY = 2000; // time under threshold before we add more
+const SPRINKLE_DELAY_JITTER = 1000; // random offset for sprinkle delay
 const MIN_POPULATION_RATIO = 0.03; // ensure minimum population
 const LOW_CELL_THRESHOLD = Math.floor(TOTAL_CELLS * MIN_POPULATION_RATIO);
+const CRITICAL_POPULATION_THRESHOLD = Math.floor(LOW_CELL_THRESHOLD / 3);
 const FADE_RATE = 0.04; // Visual decay speed for dead cells
+const STALE_TIMEOUT = SPRINKLE_DELAY / 2; // ms before a static cell is cleared
 
 // State buffers
 let grid = new Uint8Array(TOTAL_CELLS);
 let nextGrid = new Uint8Array(TOTAL_CELLS);
 let colorGrid = new Float32Array(TOTAL_CELLS); // 0.0 to 1.0 color strength
+let lastUpdateGrid = new Float64Array(TOTAL_CELLS); // Timestamp of last state change
 
 const colors = {
     background: '#1a0a2e',
@@ -33,7 +38,7 @@ const colors = {
 const MESSAGE = [
     "  DIODESIGN LAB   ",
     "  ONLINE SYSTEMS  ",
-    "    v1.0 READY   "
+    "    v1.2 READY   "
 ];
 
 // Neighbor index caches for performance optimization
@@ -131,6 +136,7 @@ function drawMessage(lines) {
                                 const idx = gy * GRID_COLS + gx;
                                 grid[idx] = 1;
                                 colorGrid[idx] = 0.6;
+                                lastUpdateGrid[idx] = performance.now();
                             }
                         }
                     }
@@ -143,6 +149,7 @@ function drawMessage(lines) {
 function resetGrid() {
     grid.fill(0);
     colorGrid.fill(0);
+    lastUpdateGrid.fill(performance.now());
     drawMessage(MESSAGE);
 }
 
@@ -158,13 +165,14 @@ function fillCluster(gx, gy, size = 4) {
             if (Math.random() > 0.5) {
                 grid[idx] = 1;
                 colorGrid[idx] = 1.0; // User/sprinkle interaction starts at full strength
+                lastUpdateGrid[idx] = performance.now();
             }
         }
     }
 }
 
-function sprinkle() {
-    const amount = 6 + Math.floor(Math.random() * 6);
+function sprinkle(isCritical = false) {
+    const amount = (6 + Math.floor(Math.random() * 6)) * (isCritical ? 3 : 1);
     for (let i = 0; i < amount; i++) {
         const gx = Math.floor(Math.random() * GRID_COLS);
         const gy = Math.floor(Math.random() * GRID_ROWS);
@@ -209,11 +217,22 @@ function update(time) {
         n8 += grid[n8Offsets[base + 6]];
         n8 += grid[n8Offsets[base + 7]];
 
+        let newState;
         if (grid[i] === 1) {
-            nextGrid[i] = (n8 === 2 || n8 === 3) ? 1 : 0;
+            newState = (n8 === 2 || n8 === 3) ? 1 : 0;
         } else {
-            nextGrid[i] = (n8 === 3 || n8 === 6) ? 1 : 0;
+            newState = (n8 === 3 || n8 === 6) ? 1 : 0;
         }
+
+        // Kill cells that haven't changed in a while (static cells)
+        if (newState !== grid[i]) {
+            lastUpdateGrid[i] = time;
+        } else if (newState === 1 && (time - lastUpdateGrid[i] > STALE_TIMEOUT)) {
+            newState = 0;
+            lastUpdateGrid[i] = time;
+        }
+
+        nextGrid[i] = newState;
     }
 
     // Apply next generation and update visual intensity in one pass
@@ -240,8 +259,9 @@ function update(time) {
     if (activeCells < LOW_CELL_THRESHOLD) {
         if (lowCellTime === 0) {
             lowCellTime = time;
-        } else if (time - lowCellTime > SPRINKLE_DELAY) {
-            sprinkle();
+            nextSprinkleDelay = SPRINKLE_DELAY + ((Math.random() * 2 - 1) * SPRINKLE_DELAY_JITTER);
+        } else if (time - lowCellTime > nextSprinkleDelay) {
+            sprinkle(activeCells < CRITICAL_POPULATION_THRESHOLD);
             lowCellTime = 0;
         }
     } else {
@@ -298,22 +318,46 @@ function draw() {
             const intensity = colorGrid[yOffset + cx];
             if (intensity <= 0.01) continue;
 
-            // Scale lightness 50% → 85%, saturation 100% → 80%
-            const L = (50 + intensity * 35) / 100;
-            const S = (100 - intensity * 20) / 100;
-            const [r, g, b] = hslToRgb(H, S, L);
-
             const px0 = Math.round(cx * cellW);
             const px1 = Math.round((cx + 1) * cellW);
+
+            // 1. Draw large black drop shadow to give the cluster overall depth
+            if (intensity > 0.1) {
+                const sOffset = 4;
+                const spy0 = py0 + 1;
+                const spy1 = Math.min(py1 + sOffset, height);
+                const spx0 = px0 + 1;
+                const spx1 = Math.min(px1 + sOffset, width);
+                for (let py = spy0; py < spy1; py++) {
+                    const rowBase = py * width * 4;
+                    for (let px = spx0; px < spx1; px++) {
+                        const i = rowBase + px * 4;
+                        pixels[i] = 0; pixels[i + 1] = 0; pixels[i + 2] = 0;
+                    }
+                }
+            }
+
+            // 2. Draw beveled 3D cell (Gem/Tile effect)
+            const L = (50 + intensity * 35) / 100;
+            const S = (100 - intensity * 20) / 100;
+            const [r, g, b] = hslToRgb(H, S, L); // Base face color
+            const [lr, lg, lb] = hslToRgb(H, S, Math.min(1, L + 0.15)); // Top-left highlight
+            const [dr, dg, db] = hslToRgb(H, S, Math.max(0, L - 0.2));  // Bottom-right shadow
 
             for (let py = py0; py < py1; py++) {
                 const rowBase = py * width * 4;
                 for (let px = px0; px < px1; px++) {
                     const i = rowBase + px * 4;
-                    pixels[i] = r;
-                    pixels[i + 1] = g;
-                    pixels[i + 2] = b;
-                    pixels[i + 3] = 255;
+                    if (py === py0 || px === px0) {
+                        // Top/Left highlight
+                        pixels[i] = lr; pixels[i + 1] = lg; pixels[i + 2] = lb;
+                    } else if (py === py1 - 1 || px === px1 - 1) {
+                        // Bottom/Right internal shadow
+                        pixels[i] = dr; pixels[i + 1] = dg; pixels[i + 2] = db;
+                    } else {
+                        // Main cell face
+                        pixels[i] = r; pixels[i + 1] = g; pixels[i + 2] = b;
+                    }
                 }
             }
         }
