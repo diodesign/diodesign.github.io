@@ -3,26 +3,45 @@ title: "Contributors"
 subtitle: "We fight for the users!"
 ---
 
-## Copyright
+## Third-party software
 
-This website uses the following open-source software:
+The diodesign lab website is built upon the following open-source components. Their inclusion here acknowledges their copyright and license, and does not imply any affiliation with or endorsement by their respective authors.
 
-*   [Orama](https://github.com/oramasearch/orama), which is copyright &copy; 2023 OramaSearch Inc, and covered by the [Apache License, Version 2.0](https://github.com/oramasearch/orama/blob/main/LICENSE.md).
-*   [Marked](https://github.com/markedjs/marked), which is copyright &copy; 2018-present, MarkedJS, and copyright &copy; 2011-2018, Christopher Jeffrey. It is covered by the [MIT License](https://github.com/markedjs/marked/blob/master/LICENSE).
+### Runtime libraries
 
-All other material on the [diodesign.org website](https://diodesign.org/) and in its [source code repository](https://github.com/diodesign/diodesign.github.io) is:
+These components are loaded by your browser to enable site features:
+
+*   [Orama](https://github.com/oramasearch/orama), copyright &copy; 2023 OramaSearch Inc (Apache 2.0).
+*   [Marked](https://github.com/markedjs/marked), copyright &copy; 2018-2026, MarkedJS; copyright &copy; 2011-2018, Christopher Jeffrey (MIT).
+
+### Build system
+
+These tools are used during the site's compilation process:
+
+*   [PyYAML](https://github.com/yaml/pyyaml) (MIT).
+*   [Python Frontmatter](https://github.com/eyeseast/python-frontmatter) (MIT).
+*   [Python-Markdown](https://github.com/Python-Markdown/markdown) (BSD 3-Clause).
+*   [Pygments](https://pygments.org/) (BSD 2-Clause).
+
+## Lab contributors
+
+This section applies to the diodesign lab website's first-party content.
+
+### Copyright
+
+All material on the [diodesign.org website](https://diodesign.org/) and in its [source code repository](https://github.com/diodesign/diodesign.github.io) not credited above is:
 
 *   Copyright &copy; 2026 Chris Williams.
 
-See the [terms of use](/license/) for information on redistribution and attribution requirements.
+See the [terms of use](/license/) for redistribution and attribution requirements.
 
-## Independence
+### Independence
 
-We are an independent collective, not affiliated with any corporation, institution, or organization. Any opinions or statements made by any contributors on this website or in its source code repository are their own and do not represent any employer, entity, or group.
+The lab is an independent collective, not affiliated with any corporation, institution, or organization. Any opinions or statements made by lab contributors are their own and do not represent any employer, entity, or group. Furthermore, the lab is entirely independent of the authors of the third-party software listed above.
 
-## No liability
+### No liability
 
-This website, its content, and its source code repository are provided “as is”, without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose and noninfringement. In no event shall the contributors or copyright holders be liable for any claim, damages or other liability, whether in an action of contract, tort or otherwise, arising from, out of or in connection with the website, the repository, or the use or other dealings in either.
+This website, its content, and its source code repository are provided “as is”, without warranty of any kind. In no event shall the lab's contributors be liable for any claim, damages, or other liability arising from the use of this site or its repository.
 
 ## Contribute to the lab
 
