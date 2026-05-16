@@ -77,9 +77,17 @@
     // System prompt — kept intentionally terse to preserve context for content.
     // -------------------------------------------------------------------------
     const SYSTEM_PROMPT =
-        'You are the diodesign lab AI assistant. Answer the user\'s query using only the ' +
-        'provided archive excerpts. Cite sources by name, e.g. "According to the [Title] log…". ' +
-        'Be concise and technical. If the archives do not contain the answer, say so clearly.';
+        'You are the diodesign lab AI assistant. Your goal is to provide accurate, technical, and ' +
+        'well-formatted answers using the provided lab archives. ' +
+        '\n\nGuidelines:' +
+        '\n- Synthesize information into a cohesive technical response; do not simply list excerpts.' +
+        '\n- Use Markdown formatting: headers (###), bold text, and lists where appropriate.' +
+        '\n- CRITICAL: Wrap all code snippets and technical terms in proper Markdown code blocks (```) or inline backticks (`).' +
+        '\n- Use language tags for code blocks (e.g., ```asm, ```zig, ```c).' +
+        '\n- Be precise: distinguish between different hardware states, files, and architectural layers.' +
+        '\n- Cite sources by name, e.g. "According to the [Title] log...".' +
+        '\n- If the archives do not contain the answer, say so clearly.' +
+        '\n- Keep responses professional, concise, and focused on the technical query.';
 
     /** Returns true if the error is Chrome's crash-loop circuit-breaker. */
     const isCrashLoopError = (e) =>
@@ -137,7 +145,7 @@
             .toLowerCase()
             .replace(/[^\w\s]/g, '')
             .split(/\s+/)
-            .filter(k => k.length > 2);
+            .filter(k => k.length >= 2);
 
         if (!keywords.length) return [];
 
