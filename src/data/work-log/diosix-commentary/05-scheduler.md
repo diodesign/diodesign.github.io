@@ -1,8 +1,8 @@
 ---
-title: "Lions' Commentary on Diosix: Chapter 5"
-date: "2026-05-13"
-byline: "By Chris Williams"
-summary: "The Pulse: Timer, Scheduler, and Context Switching"
+title: "Part 5: Multitasking guests and virtual CPU cores"
+date: "2026-05-19"
+byline: "Chris Williams"
+summary: "How the timer, scheduler, and context switching form the pulse of the system"
 ---
 
 A hypervisor is only as good as its ability to juggle multiple threads of execution. Diosix uses a Weighted Fair Queuing (WFQ) scheduler to manage virtual cores (vcores).

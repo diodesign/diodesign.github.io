@@ -1,8 +1,8 @@
 ---
-title: "Lions' Commentary on Diosix: Chapter 2"
-date: "2026-05-10"
-byline: "By Chris Williams"
-summary: "Taking Control: Allocators, Interrupts, and Physical Cores"
+title: "Part 2: Laying the groundwork"
+date: "2026-05-16"
+byline: "Chris Williams"
+summary: "Taking control: Allocators, interrupts, and physical cores"
 ---
 
 Once we land in Zig's `main`, the hypervisor needs to build its own internal world. This chapter covers how a raw physical core becomes a managed resource.

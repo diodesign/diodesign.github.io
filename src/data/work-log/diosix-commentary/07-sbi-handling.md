@@ -1,8 +1,8 @@
 ---
-title: "Lions' Commentary on Diosix: Chapter 7"
-date: "2026-05-15"
-byline: "By Chris Williams"
-summary: "The Dialogue: Environment Calls and SBI"
+title: "Part 7: How the hypervisor and guests interact"
+date: "2026-05-21"
+byline: "Chris Williams"
+summary: "Implementing and handling environment calls and SBI"
 ---
 
 When the guest Linux kernel wants to talk to the "hardware" (e.g., to write to the console or set a timer), it executes an `ecall`. Because we previously delegated most exceptions but **not** `ecall`, the CPU traps into the hypervisor's `xint_machine_entry_handler`.

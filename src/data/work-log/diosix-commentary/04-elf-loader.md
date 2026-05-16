@@ -1,8 +1,8 @@
 ---
-title: "Lions' Commentary on Diosix: Chapter 4"
-date: "2026-05-12"
-byline: "By Chris Williams"
-summary: "The Payload: Unpacking the Root VM ELF"
+title: "Part 4: Loading the first guest VM"
+date: "2026-05-18"
+byline: "Chris Williams"
+summary: "Unpacking the root VM ELF from the hypervisor payload"
 ---
 
 The "Root VM" is the first guest Diosix runs. It's usually a Linux kernel. In the current build, this ELF binary is actually embedded directly inside the hypervisor's own binary in a section called `.rootvm`.

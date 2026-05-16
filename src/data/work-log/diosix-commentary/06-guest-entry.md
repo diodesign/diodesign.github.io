@@ -1,8 +1,8 @@
 ---
-title: "Lions' Commentary on Diosix: Chapter 6"
-date: "2026-05-14"
-byline: "By Chris Williams"
-summary: "The Leap: Entering the Root VM"
+title: "Part 6: Making the leap from hypervisor to supervisor"
+date: "2026-05-20"
+byline: "Chris Williams"
+summary: "Entering the root VM and begin guest kernel execution"
 ---
 
 All the preparation leads to this: the moment the hypervisor cedes the CPU to the guest. This isn't a simple jump instruction; it's a carefully orchestrated state transition.

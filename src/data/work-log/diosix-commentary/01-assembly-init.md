@@ -1,9 +1,37 @@
 ---
-title: "Chapter 1: "
-date: "2026-05-14"
+title: "Part 1: From bootloader to Zig"
+date: "2026-05-15"
 byline: "Chris Williams"
-summary: "Pre-Zig Assembly Initialization"
+summary: "Pre-Zig assembly-level initialization of Diosix, straight from the bootloader."
 ---
+
+Welcome to this commentary series on [Diosix](https://diosix.org), which is an open-source bare-metal hypervisor written in [Zig](https://ziglang.org/) for 64-bit [RISC-V](https://docs.riscv.org/reference/home/index.html) systems. This guide is for systems developers curious about how this low-level software works. To learn about the motivation behind the commentary, see [this introduction](/work-log/diosix-commentary-introduction.html).
+
+Let's dive in, starting with a high-level overview, followed by the assembly code that initializes the hypervisor.
+
+### Diosix architectural overview
+
+A hypervisor, or virtual machine monitor (VMM), is a privileged software layer that abstracts physical hardware into isolated execution environments called virtual machines (VMs).
+
+As a type-1 hypervisor, Diosix executes closest to the silicon, typically in RISC-V's Machine (M) or Hypervisor-Extended Supervisor (HS) modes. While it performs standard VMM duties like resource multiplexing and hardware-enforced isolation of VMs, its design is more akin to a recursive microkernel than a traditional monolithic VMM. It implements a hierarchical governance model that delegates guest orchestration away from the hypervisor core.
+
+The key architectural pillars of Diosix include:
+
+Recursive management model
+: Rather than a flat list of guests managed by the VMM, Diosix organizes VMs into a tree-like lineage. The **root VM**, created at boot, acts as the progenitor. Any VM can fork children and manage their entire lifecycle, effectively acting as a management domain for its own subtree.
+
+Subtree resource quotas
+: Resources are partitioned through recursive quotas. A parent VM allocates a slice of its own harts (RISC-V CPU cores), RAM, and scheduling priority to its descendants. This ensures that no branch of the hierarchy can consume more than its allocated share of the physical system.
+
+Lineage-based isolation
+: Isolation is enforced through restricted communication paths. VMs are strictly limited to interacting with their immediate parent and children. Sibling VMs and distant branches are entirely invisible to one another, minimizing the system's attack surface.
+
+Hardware trust delegation
+: Diosix separates guest management from hardware control. Only VMs with a **hardware trust** flag can map physical memory-mapped I/O (MMIO) or route hardware interrupts. The **root VM** is initialized with this trust, enabling it to provide drivers, file systems, and other system services to the rest of the hierarchy. This model keeps complex driver logic out of the hypervisor and allows Diosix to leverage the mature hardware support of kernels like Linux. Typically, a child VM will use its inherited trust to load a guest image from storage before dropping its trusted status to run as a standard, isolated guest.
+
+By acting as a secure, minimal orchestrator, Diosix provides the plumbing necessary to host multiple, heterogeneous operating systems while keeping the hypervisor core focused on the fundamental task of hardware arbitration.
+
+### After power-on or reset
 
 When the RISC-V hardware fires up or when a bootloader like QEMU's internal ROM hands off control, we find ourselves at `_start`. At this stage, the environment is as "bare metal" as it gets. Each CPU core (or "hart" in RISC-V parlance) enters the same entry point simultaneously.
 

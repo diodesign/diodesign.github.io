@@ -1,8 +1,8 @@
 ---
-title: "Lions' Commentary on Diosix: Chapter 3"
-date: "2026-05-11"
-byline: "By Chris Williams"
-summary: "The Map of the World: Device Tree Handling"
+title: "Part 3: Demystifying the device tree"
+date: "2026-05-17"
+byline: "Chris Williams"
+summary: "How Diosix discovers and describes the hardware using device trees"
 ---
 
 Diosix doesn't guess what hardware it's running on; it reads the Device Tree Blob (DTB). This chapter explores how Diosix parses the host's hardware map and generates a custom map for its guests.
