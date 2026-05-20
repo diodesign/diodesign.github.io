@@ -14,6 +14,6 @@ There are times I miss the Old Country. My family and the pals I had there. The 
 
 It was with much relief that King Charles III played his state visit to the USA perfectly. Here's the reaction stateside:
 
-<center><iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/oneo86z5VG8?si=QEOzBDOwCXDGwArK&amp;controls=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></center>
+<iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/oneo86z5VG8?si=QEOzBDOwCXDGwArK&amp;controls=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 Speaking of which, this feels like a sea change for _The Daily Show_. By sea, I mean, tone. I think the gloves are off and, perhaps, the gloves are not coming back on for a while.

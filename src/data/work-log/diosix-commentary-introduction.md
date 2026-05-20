@@ -32,13 +32,13 @@ The [commentary series starts here](/work-log/diosix-commentary/). If you have a
 
 I've been developing Diosix off and on since about 2007, although I was thinking about the project back in the early 2000s when I was [studying electronics engineering](/life-log/path-to-big-tech.html) at university and realized I liked firmware, drivers, and kernel-level code more than fine-tuning analog circuits.
 
-Diosix started as a hobby microkernel operating system for 32-bit and 64-bit x86 systems, and was then ported to 64-bit Arm. It was influenced by QNX's Neutrino; Minix; L4; Haiku's NewOS kernel; LK; and other microkernel designs.
+Diosix started as a [hobby microkernel operating system](https://github.com/diodesign/diosix-legacy) for 32-bit x86 systems, and was later ported to Arm and 64-bit x86. It was influenced by QNX's Neutrino; Minix; L4; Haiku's NewOS kernel; LK; and other microkernel designs.
 
 Once I got as far as providing a multitasking, multiprocessor POSIX-compatible fully protected userspace for processes and threads, with trusted system services providing access to the console and other resources, I realized there was no way I was writing an entire OS by myself.
 
 I developed Diosix to learn how operating system kernels and support services could and should work, and how to bring up x86 and Arm systems from the bootloader to usermode and support applications. What I hadn't explored yet was virtualization.
 
-That led to Diosix pivoting from a C-based microkernel OS to a Rust-based bare-metal hypervisor for 64-bit RISC-V systems that was able to [load and execute](https://asciinema.org/a/395307) multiple Linux-based guests at once. I chose RISC-V because it was new, barely explored, and open, and x86 and Arm felt like a well-trodden path at that point. I moved to Rust because it had memory safety and felt like an intuitve progression from C, which is basically assembly with syntactic sugar.
+That led to Diosix pivoting from a C-based microkernel OS to a bare-metal hypervisor written in Rust for 64-bit RISC-V systems that was able to [load and execute](https://asciinema.org/a/395307) multiple Linux-based guests at once. I chose RISC-V because it was new, barely explored, and open, and x86 and Arm felt like a well-trodden path at that point. I moved to Rust because it had memory safety and felt like an intuitve progression from C, which is basically assembly with syntactic sugar.
 
 Diosix is still targeting 64-bit RISC-V as that feels a natural fit for hypervisor-grade systems; if you'd like to maintain a 32-bit RISC-V port as a branch, [let's connect](/contact/).
 

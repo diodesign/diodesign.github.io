@@ -65,13 +65,52 @@ def load_data(filename):
     with open(path, 'r') as f:
         return yaml.safe_load(f)
 
+import re
+
+def post_process_html(html_content):
+    """
+    Wraps iframes/videos in responsive containers and calculates their aspect ratios
+    from their width/height attributes if available, defaulting to 16/9.
+    Also cleans up wrapping <p> or <center> tags if they surround iframes.
+    """
+    if not html_content:
+        return html_content
+
+    # Clean up wrapping <p> or <center> tags specifically wrapping <iframe ...></iframe>
+    html_content = re.sub(
+        r'<(p|center)>\s*(<iframe\b[^>]*>.*?</iframe>)\s*</\1>',
+        r'\2',
+        html_content,
+        flags=re.DOTALL | re.IGNORECASE
+    )
+
+    def wrap_iframe(match):
+        iframe_tag = match.group(0)
+        # Try to find width and height attributes to compute aspect ratio
+        w_match = re.search(r'\bwidth=["\'](\d+)(?:px)?["\']', iframe_tag, re.IGNORECASE)
+        h_match = re.search(r'\bheight=["\'](\d+)(?:px)?["\']', iframe_tag, re.IGNORECASE)
+        
+        aspect_ratio = "16 / 9"  # default widescreen fallback
+        if w_match and h_match:
+            width = int(w_match.group(1))
+            height = int(h_match.group(1))
+            if height > 0:
+                aspect_ratio = f"{width} / {height}"
+        
+        return f'<div class="responsive-embed" style="aspect-ratio: {aspect_ratio};">{iframe_tag}</div>'
+    
+    # Wrap all iframe tags automatically
+    processed = re.sub(r'<iframe\b[^>]*>.*?</iframe>', wrap_iframe, html_content, flags=re.DOTALL | re.IGNORECASE)
+    return processed
+
 def load_markdown(filename):
     """Loads Markdown with frontmatter, returning metadata and rendered HTML content."""
     path = os.path.join(DATA_DIR, filename)
     with open(path, 'r') as f:
         post = frontmatter.load(f)
         metadata = post.metadata
-        metadata['content'] = markdown.markdown(post.content, extensions=['tables', 'codehilite', 'fenced_code', 'def_list'])
+        rendered_html = markdown.markdown(post.content, extensions=['tables', 'codehilite', 'fenced_code', 'def_list'])
+        metadata['content'] = post_process_html(rendered_html)
         return metadata
 
 # Template cache — populated on first access, cleared at the start of each build
@@ -148,7 +187,8 @@ def build_log_hierarchy(data_path, title, subtitle, folder_path, breadcrumbs=Non
                     post = frontmatter.load(f)
                     entry = post.metadata
                     entry['content_raw'] = post.content # Keep for search index
-                    entry['content'] = markdown.markdown(post.content, extensions=['tables', 'codehilite', 'fenced_code', 'def_list'])
+                    rendered_html = markdown.markdown(post.content, extensions=['tables', 'codehilite', 'fenced_code', 'def_list'])
+                    entry['content'] = post_process_html(rendered_html)
                     # Fallback for permalink if not in frontmatter
                     if 'permalink' not in entry:
                         entry['permalink'] = item.replace('.md', '.html')
@@ -435,6 +475,13 @@ def build_site():
         if os.path.exists(asset):
             shutil.copy2(asset, os.path.join(OUTPUT_DIR, asset))
             print(f"Copied {asset} to {OUTPUT_DIR}")
+
+    # Copy images folder if it exists
+    src_images_dir = 'src/images'
+    dest_images_dir = os.path.join(OUTPUT_DIR, 'images')
+    if os.path.exists(src_images_dir):
+        shutil.copytree(src_images_dir, dest_images_dir, dirs_exist_ok=True)
+        print(f"Copied {src_images_dir} to {dest_images_dir}")
 
     # Build search index for AI
     build_search_index()
