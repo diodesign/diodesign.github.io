@@ -69,11 +69,11 @@ def generate_sitemap():
 
 
 def generate_llms_txt():
-    """Generates a concise llms.txt describing the lab and its projects."""
+    """Generates a concise llms.txt describing the program and its projects."""
     content = (
-        "# the diodesign lab\n\n"
-        "> Synthesizing silicon and intelligence through low-level systems experimentation.\n\n"
-        "The diodesign lab is an independent personal systems-engineering lab run by Chris Williams.\n\n"
+        "# the diodesign program\n\n"
+        "> Blending low-level systems engineering, artificial intelligence, and human craft at the foundations of computing.\n\n"
+        "The diodesign program is an independent personal initiative run by Chris Williams exploring how AI and human engineering aptitude work together across firmware, hypervisors, and FPGA/ASIC design.\n\n"
         "## Projects\n\n"
         "- [Diosix](https://diosix.org/): An open-source bare-metal multiprocessor hypervisor written in Zig for 64-bit RISC-V systems.\n"
         "- [diodesign.org](https://github.com/diodesign/diodesign.github.io): This single-page portal and procedural landscape engine.\n\n"
@@ -96,7 +96,7 @@ def build_site():
     base_html = load_template('base.html')
     index_body = render_template(load_template('index.html'), {})
     full_html = render_template(base_html, {
-        'title': 'the diodesign lab',
+        'title': 'the diodesign program',
         'body_class': 'home-page',
         'body': index_body
     })

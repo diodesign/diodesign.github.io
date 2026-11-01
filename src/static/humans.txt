@@ -14,6 +14,6 @@ $ cat humans.txt
  
 
 
-            t h e   d i o d e s i g n   l a b 
+            t h e   d i o d e s i g n   p r o g r a m 
     >> They stole our humanness. Now we're stealing it back. <<
                     Wear sunscreen.

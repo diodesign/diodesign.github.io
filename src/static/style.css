@@ -54,7 +54,7 @@ code {
     width: 100vw;
     height: 100vh;
     z-index: 1;
-    pointer-events: none;
+    pointer-events: auto;
     overflow: hidden;
     margin: 0;
     padding: 0;
@@ -76,6 +76,7 @@ code {
     justify-content: center;
     padding: 2.5rem 1.5rem;
     z-index: 10;
+    pointer-events: none;
 }
 
 /* Larger Central Box */
@@ -90,7 +91,7 @@ code {
     border-radius: 26px;
     border: 1px solid rgba(37, 99, 235, 0.16);
     box-shadow: 0 28px 70px rgba(15, 23, 42, 0.12), 0 6px 24px rgba(37, 99, 235, 0.06);
-    padding: 3.25rem 3.5rem 2.25rem;
+    padding: 3.25rem 3.5rem 2rem;
     text-align: center;
     pointer-events: auto;
     transition: max-width 0.35s ease, padding 0.35s ease;
@@ -109,7 +110,7 @@ code {
     font-size: 1.15rem;
     color: var(--muted-color);
     font-weight: 400;
-    max-width: 660px;
+    max-width: 680px;
     margin: 0 auto 2.25rem auto;
 }
 
@@ -394,11 +395,10 @@ code {
     color: var(--highlight-color);
 }
 
-/* Panel footer styling */
+/* Panel footer styling (no horizontal divider line above copyright) */
 .panel-footer {
-    margin-top: 1.75rem;
-    padding-top: 1.15rem;
-    border-top: 1px solid var(--border-color);
+    margin-top: 1.5rem;
+    padding-top: 0;
     font-size: 0.85rem;
     color: var(--muted-color);
 }
@@ -409,9 +409,412 @@ code {
     margin: 0;
 }
 
+/* ==========================================================================
+   Bottom-Right Vector RISC-V Silicon Chip Button (over the dark mountain)
+   ========================================================================== */
+.riscv-chip-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 28px;
+    z-index: 30;
+    width: 64px;
+    height: 64px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    pointer-events: auto;
+    transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), filter 0.25s ease;
+    filter: drop-shadow(0 6px 16px rgba(2, 132, 199, 0.32));
+}
+
+.riscv-chip-btn:hover {
+    transform: translateY(-3px) scale(1.06);
+    filter: drop-shadow(0 8px 22px rgba(56, 189, 248, 0.55));
+}
+
+.riscv-chip-btn.active {
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 18px rgba(37, 99, 235, 0.75));
+}
+
+.riscv-chip-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* ==========================================================================
+   Tactile RISC-V Instruction & Datapath Explorer
+   ========================================================================== */
+.riscv-explorer {
+    text-align: left;
+    animation: fadeInExplorer 0.24s ease;
+}
+
+@keyframes fadeInExplorer {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.rv-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.2rem;
+    flex-wrap: wrap;
+}
+
+.rv-back-btn {
+    border: 1px solid rgba(37, 99, 235, 0.22);
+    background: rgba(37, 99, 235, 0.06);
+    color: var(--highlight-color);
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.86rem;
+    font-weight: 700;
+    padding: 0.45rem 0.9rem;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.rv-back-btn:hover {
+    background: rgba(37, 99, 235, 0.14);
+    transform: translateX(-2px);
+}
+
+.rv-title-group {
+    flex: 1;
+    min-width: 220px;
+}
+
+.rv-title-group h2 {
+    font-size: 1.45rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    line-height: 1.15;
+    color: var(--text-color);
+}
+
+.rv-subtitle {
+    font-size: 0.84rem;
+    color: var(--muted-color);
+}
+
+.rv-xlen-toggle {
+    display: inline-flex;
+    background: #eef2f6;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 999px;
+    padding: 3px;
+}
+
+.rv-xlen-btn {
+    border: none;
+    background: transparent;
+    color: var(--muted-color);
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.35rem 0.85rem;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.rv-xlen-btn.active {
+    background: var(--highlight-color);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.28);
+}
+
+/* Assembly Input & Presets Row */
+.rv-controls-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.rv-asm-box {
+    display: flex;
+    align-items: center;
+    background: #f8fafc;
+    border: 1.5px solid rgba(37, 99, 235, 0.25);
+    border-radius: 12px;
+    padding: 0.35rem 0.65rem;
+    gap: 0.6rem;
+    flex: 1;
+    min-width: 260px;
+}
+
+.rv-asm-box:focus-within {
+    border-color: var(--highlight-color);
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.rv-asm-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    background: rgba(37, 99, 235, 0.1);
+    color: var(--highlight-color);
+    padding: 2px 7px;
+    border-radius: 6px;
+}
+
+.rv-asm-input {
+    border: none;
+    background: transparent;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.96rem;
+    font-weight: 600;
+    color: var(--text-color);
+    outline: none;
+    flex: 1;
+    min-width: 140px;
+}
+
+.rv-hex-badge {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--secondary-highlight);
+    background: rgba(2, 132, 199, 0.08);
+    padding: 3px 8px;
+    border-radius: 6px;
+}
+
+.rv-presets {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+}
+
+.rv-preset-pill {
+    border: 1px solid rgba(15, 23, 42, 0.1);
+    background: #f8fafc;
+    color: var(--muted-color);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.35rem 0.62rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.18s ease;
+}
+
+.rv-preset-pill:hover {
+    border-color: var(--highlight-color);
+    color: var(--highlight-color);
+    background: rgba(37, 99, 235, 0.06);
+}
+
+/* Tactile 32-Bit Register Strip */
+.rv-bitstrip-wrapper {
+    background: #f8fafc;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 14px;
+    padding: 0.85rem 0.75rem 0.7rem;
+    margin-bottom: 1rem;
+    overflow-x: auto;
+}
+
+.rv-bitstrip {
+    display: grid;
+    grid-template-columns: repeat(32, minmax(21px, 1fr));
+    gap: 2px;
+    min-width: 700px;
+}
+
+.rv-bit-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.rv-bit-idx {
+    font-size: 0.58rem;
+    color: #94a3b8;
+    margin-bottom: 2px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.rv-bit-btn {
+    width: 100%;
+    height: 28px;
+    border-radius: 5px;
+    border: 1px solid rgba(37, 99, 235, 0.22);
+    background: #ffffff;
+    color: var(--text-color);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+.rv-bit-btn:hover {
+    transform: translateY(-1px);
+    border-color: var(--highlight-color);
+}
+
+.rv-bit-btn.bit-one {
+    background: var(--highlight-color);
+    color: #ffffff;
+    border-color: var(--highlight-color);
+}
+
+/* Field color accents along bottom edge of bit buttons */
+.rv-bit-btn[data-field="opcode"] { border-bottom: 3px solid #1e3a8a; }
+.rv-bit-btn[data-field="rd"]     { border-bottom: 3px solid #2563eb; }
+.rv-bit-btn[data-field="funct3"] { border-bottom: 3px solid #0284c7; }
+.rv-bit-btn[data-field="rs1"]    { border-bottom: 3px solid #0ea5e9; }
+.rv-bit-btn[data-field="rs2"]    { border-bottom: 3px solid #38bdf8; }
+.rv-bit-btn[data-field="imm"],
+.rv-bit-btn[data-field="funct7"] { border-bottom: 3px solid #60a5fa; }
+
+.rv-field-legend {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.6rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(15, 23, 42, 0.06);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.76rem;
+}
+
+.rv-field-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: #ffffff;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.rv-field-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+/* Datapath SVG Card */
+.rv-datapath-card {
+    background: #f8fafc;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 14px;
+    padding: 0.75rem 0.9rem;
+}
+
+.rv-datapath-svg {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.rv-wire {
+    fill: none;
+    stroke: #cbd5e1;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: stroke 0.25s ease, stroke-width 0.25s ease;
+}
+
+.rv-wire.active {
+    stroke: #2563eb;
+    stroke-width: 3;
+    stroke-dasharray: 6 4;
+    animation: wireFlow 0.9s linear infinite;
+}
+
+@keyframes wireFlow {
+    to {
+        stroke-dashoffset: -10;
+    }
+}
+
+.rv-node rect,
+.rv-node polygon {
+    fill: #ffffff;
+    stroke: #cbd5e1;
+    stroke-width: 1.8;
+    transition: stroke 0.25s ease, fill 0.25s ease;
+}
+
+.rv-node.active rect,
+.rv-node.active polygon {
+    stroke: #2563eb;
+    fill: #eff6ff;
+}
+
+.rv-node text {
+    text-anchor: middle;
+    font-family: 'Outfit', sans-serif;
+}
+
+.rv-node-title {
+    font-size: 10px;
+    font-weight: 700;
+    fill: #475569;
+    letter-spacing: 0.6px;
+}
+
+.rv-node.active .rv-node-title {
+    fill: #1d4ed8;
+}
+
+.rv-node-val {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+    font-size: 11px;
+    font-weight: 700;
+    fill: #0f172a;
+}
+
+.rv-node-sub {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+    font-size: 9.5px;
+    fill: #64748b;
+}
+
+.rv-execution-bar {
+    margin-top: 0.55rem;
+    padding-top: 0.55rem;
+    border-top: 1px solid rgba(15, 23, 42, 0.06);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.8rem;
+    color: var(--muted-color);
+}
+
+.rv-execution-bar strong {
+    color: var(--highlight-color);
+}
+
 /* Small-screen devices: disable procedural landscape background and show middle box cleanly */
 @media (max-width: 768px) {
-    #splash-canvas-wrapper {
+    #splash-canvas-wrapper,
+    .riscv-chip-btn {
         display: none !important;
     }
 
@@ -423,6 +826,7 @@ code {
         padding: 1.25rem 0.85rem;
         min-height: 100vh;
         justify-content: flex-start;
+        pointer-events: auto;
     }
 
     .floating-panel {
