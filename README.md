@@ -1,91 +1,67 @@
-# diodesign.github.io CMS
+# diodesign.org
 
-This repository contains a lightweight, Python-powered static site generator as well as site content. It builds the diodesign.org website, which is kindly hosted by GitHub Pages.
+This repository contains the source and zero-dependency Python static build script for **[diodesign.org](https://diodesign.org/)**, the single-page web portal for **the diodesign lab**, hosted via GitHub Pages.
 
 ## Architecture
 
-- [`src/data/`](src/data/): Content stored in human-friendly Markdown files with YAML frontmatter.
-- [`src/data/_book.yaml`](src/data/_book.yaml): The root configuration file that defines the site's primary log sections.
-- [`src/templates/`](src/templates/): HTML templates with simple `{{ variable }}` placeholders.
-- [`_site/`](_site/): The output directory where the built static site is generated. This directory is ignored by git.
-- [`build.py`](build.py): The build script that assembles the Markdown data and HTML templates into final static pages.
-
-## Setup
-
-The build script to generate the site requires **Python 3**, **PyYAML**, **python-frontmatter**, and **markdown**. To install the dependencies, run the following command:
-
-```bash
-pip install -r requirements.txt
-```
-  
-[build.py](build.py) will attempt to install these dependencies automatically if they are missing.
-
-## Build and test
-
-1.  To build static pages from the current content:
-
-    ```bash
-    python3 build.py
-    ```
-
-2.  Since the site uses root-relative paths, you must use a server for local testing. To run a development server:
-
-    ```bash
-    python3 build.py --server
-    ```
-
-    Then visit [http://localhost:8000](http://localhost:8000). The server will serve from the `_site/` directory, monitor the source files, and automatically rebuild the site whenever changes are detected, allowing for a seamless development experience.
-
-3.  To remove all auto-generated pages prior to committing changes:
-
-    ```bash
-    python3 build.py --clear
-    ```
-
-## CI/CD deployment
-
-This repository includes a GitHub Actions workflow in `.github/workflows/deploy.yml`. When you push to the `prod` branch, GitHub will automatically:
-1. Setup a Python environment.
-2. Run `build.py` to generate the latest site into `_site/`.
-3. Deploy the contents of the `_site/` folder to GitHub Pages.
-
-## Managing content
-
-### Hierarchical logs and series
-
-The log system supports nested folders and multi-part series (like a book or function-by-function commentary).
-
-1.  **Top-level sections**: Defined in `src/data/_book.yaml`. Each entry specifies a `title`, `subtitle`, and the `path` to the log folder.
-2.  **Sub-sections (series)**: Any subdirectory within a log folder can become its own sub-section if it contains its own `_book.yaml`.
-3.  **Discovery**: The build script automatically crawls these directories. If it finds a `_book.yaml`, it generates a new paginated list page for that sub-section.
-4.  **Linking**: Parent log pages (like the Work Log) automatically detect sub-sections and display a "Series" link at the top of their list.
-
-### Adding and editing static pages
-
-To create a new static page (like "About" or "Contact"), create a `.md` file in `src/data/`. The build script will automatically:
-- Generate a page at `/[filename]/index.html`.
-- Use the `page.html` template by default (override this with `template: name.html` in frontmatter).
-- Add the page to the AI search index.
-
-### Adding log entries
-
-To add a new entry to a log or sub-log:
-1.  Navigate to the relevant folder (e.g., `src/data/work-log/` or `src/data/work-log/diosix-commentary/`).
-2.  Create a new `.md` file with the required frontmatter.
-3.  The build script will handle sorting (by date) and pagination (3 entries per page).
-
-Example entry file:
-
-```markdown
----
-title: "My New Entry"
-date: "2026-04-20"
-byline: "Chris Williams"
----
-
-This is the content of my log entry in Markdown.
+```text
+.
+├── build.py                 # Zero-dependency static site builder & live-reload dev server
+├── requirements.txt         # Empty (uses Python 3 standard library only)
+├── src/
+│   ├── templates/
+│   │   ├── base.html        # Root HTML shell and live-reload client script
+│   │   └── index.html       # Single-page lab portal (About, Projects, Updates, Contact)
+│   └── static/
+│       ├── CNAME            # Custom domain configuration (diodesign.org)
+│       ├── splash.js        # Accordion UI controller & procedural alpine landscape engine
+│       ├── style.css        # Responsive single-page styles
+│       ├── favicon.ico
+│       ├── humans.txt
+│       ├── keybase.txt
+│       └── robots.txt
+└── _site/                   # Generated build output (git-ignored)
 ```
 
------
+- **[`src/templates/`](src/templates/)**: Contains [`base.html`](src/templates/base.html) and [`index.html`](src/templates/index.html), which define the central lab panel and its single-open expandable sections (*About*, *Projects*, *Updates*, and *Contact*).
+- **[`src/static/`](src/static/)**: Static assets copied directly to the root of `_site/` during the build.
+  - **[`splash.js`](src/static/splash.js)**: Controls the single-open accordion and renders the procedural alpine & fjord landscape background on desktop/tablet screens (automatically bypassed on screens `<= 768px`).
+  - **[`style.css`](src/static/style.css)**: Responsive layout and typography rules.
+- **[`build.py`](build.py)**: Compiles the templates, copies static assets into `_site/`, generates `sitemap.xml` and `llms.txt`, and provides a multi-threaded local development server with automatic browser live-reload.
 
-See [CONTRIBUTORS](src/data/contributors.md) for copyright and [LICENSE](src/data/license.md) for terms and conditions of use.
+## Requirements
+
+- **Python 3** (uses only the Python standard library; no third-party packages are required).
+
+## Build and Local Development
+
+1. **Build the static site** into `_site/`:
+
+   ```bash
+   python3 build.py
+   ```
+
+2. **Run the local development server** with automatic rebuild and live browser reload:
+
+   ```bash
+   python3 build.py --server
+   ```
+
+   Then visit [http://localhost:8000](http://localhost:8000). Any edits to files in `src/` or `build.py` automatically rebuild `_site/` and refresh connected browsers.
+
+3. **Clean generated build output**:
+
+   ```bash
+   python3 build.py --clear
+   ```
+
+## CI/CD Deployment
+
+The GitHub Actions workflow in [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) runs automatically on pushes to the `prod` branch:
+1. Sets up Python 3.
+2. Runs `python build.py` to compile the site into `./_site`.
+3. Uploads and deploys `./_site` to GitHub Pages.
+
+---
+
+Copyright &copy; 2026 Chris Williams.

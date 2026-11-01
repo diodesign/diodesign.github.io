@@ -1,37 +1,172 @@
 <div class="splash-container">
-    <div id="splash-canvas-wrapper">
+    <div id="splash-canvas-wrapper" aria-hidden="true">
         <canvas id="splash-canvas"></canvas>
     </div>
-    <div class="splash-info container">
-        <div id="splash-text">
+
+    <div class="floating-panel">
+        <div id="splash-text" class="lab-header">
             <h1>the diodesign lab</h1>
-            <p>
+            <p class="lab-subtitle">
                 Synthesizing silicon and intelligence through low-level systems experimentation
             </p>
         </div>
-        <div class="search-container" id="search-container">
-            <div class="search-box">
-                <div id="search-status-overlay" class="search-status-overlay" style="display: none;">
-                    <span>Lab AI is ready to download (approx. 4GB). Click here to initialize.</span>
+
+        <div class="lab-accordion" id="lab-accordion">
+            <!-- 1. About -->
+            <section class="accordion-item">
+                <button type="button" class="accordion-trigger" aria-expanded="false" aria-controls="section-about" id="trigger-about">
+                    <span class="accordion-title">About</span>
+                    <span class="accordion-summary">Mission, philosophy &amp; people</span>
+                    <span class="accordion-icon" aria-hidden="true"></span>
+                </button>
+                <div class="accordion-panel" id="section-about" role="region" aria-labelledby="trigger-about">
+                    <div class="accordion-inner">
+                        <div class="accordion-body">
+                            <p>
+                                Here in the <strong>diodesign lab</strong>, we wander off the beaten track to see what happens when we mix low-level systems programming, self-organizing architectures, and a little too much curiosity. When those experiments stabilize, we release them into the wild as open-source software for others to use or build upon.
+                            </p>
+                            <p>
+                                The lab is run by <strong>Chris Williams</strong>, a San Francisco-based technical editor and systems engineer with more than 20 years of experience in technology publishing and open-source software, including past roles as editor-in-chief of <em>The Register</em> and editor of the Arm-systems site <em>Drobe</em>.
+                            </p>
+                            <p class="lab-disclaimer">
+                                The diodesign lab is an independent personal endeavor. All projects and experiments here are strictly personal and are not affiliated with any employer, corporation, or institution.
+                            </p>
+                        </div>
+                    </div>
                 </div>
-                <div class="search-inner">
-                    <h2 id="search-query-title" class="search-query-title" style="display: none;"></h2>
-                    <input type="text" id="search-input" class="search-input" placeholder="Ask the lab anything..."
-                        autocomplete="off">
-                    <div id="search-results" class="search-results"></div>
+            </section>
+
+            <!-- 2. Projects -->
+            <section class="accordion-item">
+                <button type="button" class="accordion-trigger" aria-expanded="false" aria-controls="section-projects" id="trigger-projects">
+                    <span class="accordion-title">Projects</span>
+                    <span class="accordion-summary">Active open-source systems &amp; code</span>
+                    <span class="accordion-icon" aria-hidden="true"></span>
+                </button>
+                <div class="accordion-panel" id="section-projects" role="region" aria-labelledby="trigger-projects">
+                    <div class="accordion-inner">
+                        <div class="accordion-body">
+                            <div class="project-list">
+                                <div class="project-card">
+                                    <div class="project-header">
+                                        <h3><a href="https://diosix.org/" target="_blank" rel="noopener">Diosix</a></h3>
+                                        <span class="project-tags">Zig &middot; RISC-V &middot; Hypervisor</span>
+                                    </div>
+                                    <p>
+                                        An open-source bare-metal multiprocessor hypervisor written in Zig for 64-bit RISC-V systems. Designed to be lightweight, secure, and reliable, with ongoing work toward decentralized, self-organizing distributed computing across autonomous VM meshes.
+                                    </p>
+                                    <div class="project-links">
+                                        <a href="https://diosix.org/" target="_blank" rel="noopener">diosix.org &rarr;</a>
+                                        <a href="https://github.com/diodesign/diosix/tree/zig" target="_blank" rel="noopener">GitHub (zig branch) &rarr;</a>
+                                    </div>
+                                </div>
+
+                                <div class="project-card">
+                                    <div class="project-header">
+                                        <h3><a href="https://github.com/diodesign/diodesign.github.io" target="_blank" rel="noopener">diodesign.org</a></h3>
+                                        <span class="project-tags">Python &middot; Canvas &middot; Static Web</span>
+                                    </div>
+                                    <p>
+                                        This lab portal and its custom zero-dependency static build pipeline, pairing a responsive single-page interface with a lightweight procedural landscape engine.
+                                    </p>
+                                    <div class="project-links">
+                                        <a href="https://github.com/diodesign/diodesign.github.io" target="_blank" rel="noopener">Source Repository &rarr;</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div id="search-cloud-fallback" class="cloud-fallback" style="display: none;">
-                Neural link stalled. <a href="https://www.google.com/">Use Cloud Search &rarr;</a>
-            </div>
-            <div id="search-reset" class="search-reset">
-                <a href="/">Ask another question &rarr;</a>
-            </div>
+            </section>
+
+            <!-- 3. Updates -->
+            <section class="accordion-item">
+                <button type="button" class="accordion-trigger" aria-expanded="false" aria-controls="section-updates" id="trigger-updates">
+                    <span class="accordion-title">Updates</span>
+                    <span class="accordion-summary">Recent lab notes &amp; milestones</span>
+                    <span class="accordion-icon" aria-hidden="true"></span>
+                </button>
+                <div class="accordion-panel" id="section-updates" role="region" aria-labelledby="trigger-updates">
+                    <div class="accordion-inner">
+                        <div class="accordion-body">
+                            <ul class="updates-list">
+                                <li>
+                                    <span class="update-date">Oct 2026</span>
+                                    <div class="update-text">
+                                        <strong>Single-Page Lab Overhaul</strong> &mdash; Streamlined <code>diodesign.org</code> into a focused single-page hub set against a real-time procedural alpine landscape.
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="update-date">May 2026</span>
+                                    <div class="update-text">
+                                        <strong>RISC-V Supervisor Bring-Up</strong> &mdash; Refining bare-metal assembly entry, stack allocation, and hardware initialization in the Diosix hypervisor core.
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="update-date">Apr 2026</span>
+                                    <div class="update-text">
+                                        <strong>Migrating Diosix to Zig</strong> &mdash; Transitioned the <a href="https://github.com/diodesign/diosix/tree/zig" target="_blank" rel="noopener">Diosix codebase</a> from Rust to Zig for a more direct low-level systems workflow without mandatory borrow-checker overhead.
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="update-date">Q1 2026</span>
+                                    <div class="update-text">
+                                        <strong>Autonomous VM Mesh Design</strong> &mdash; Architecting localized gossip protocols so peer root VMs can negotiate resources and maintain resilience without a central controller.
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. Contact -->
+            <section class="accordion-item">
+                <button type="button" class="accordion-trigger" aria-expanded="false" aria-controls="section-contact" id="trigger-contact">
+                    <span class="accordion-title">Contact</span>
+                    <span class="accordion-summary">Hailing frequencies open</span>
+                    <span class="accordion-icon" aria-hidden="true"></span>
+                </button>
+                <div class="accordion-panel" id="section-contact" role="region" aria-labelledby="trigger-contact">
+                    <div class="accordion-inner">
+                        <div class="accordion-body">
+                            <p class="contact-intro">
+                                Whether it’s a quick note, a technical question, or an idea for collaboration, feel free to reach out to <strong>Chris Williams</strong>:
+                            </p>
+                            <div class="contact-grid">
+                                <a class="contact-item" href="mailto:chrisw@diosix.org">
+                                    <span class="contact-platform">Email</span>
+                                    <span class="contact-handle">chrisw@diosix.org</span>
+                                </a>
+                                <a class="contact-item" href="https://github.com/diodesign" target="_blank" rel="noopener">
+                                    <span class="contact-platform">GitHub</span>
+                                    <span class="contact-handle">github.com/diodesign</span>
+                                </a>
+                                <a class="contact-item" href="https://www.linkedin.com/in/diodesign/" target="_blank" rel="noopener">
+                                    <span class="contact-platform">LinkedIn</span>
+                                    <span class="contact-handle">in/diodesign</span>
+                                </a>
+                                <a class="contact-item" href="https://bsky.app/profile/diodesign.org" target="_blank" rel="noopener">
+                                    <span class="contact-platform">Bluesky</span>
+                                    <span class="contact-handle">@diodesign.org</span>
+                                </a>
+                                <a class="contact-item" href="https://keybase.io/diodesign" target="_blank" rel="noopener">
+                                    <span class="contact-platform">Keybase</span>
+                                    <span class="contact-handle">keybase.io/diodesign</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="panel-footer">
+            <p class="panel-copyright">
+                Est. 2002 &middot; &copy; 2026 Chris Williams
+            </p>
         </div>
     </div>
 </div>
 
-<script src="/characters.js"></script>
 <script src="/splash.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="/search.js"></script>
