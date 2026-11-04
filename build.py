@@ -91,12 +91,38 @@ def generate_llms_txt():
     print("Built llms.txt")
 
 
+def get_last_updated_date():
+    """Returns the last commit date (or latest local source mtime if dirty) formatted as 'Mmm DD, YYYY'."""
+    try:
+        status = subprocess.run(
+            ['git', 'status', '--porcelain', 'src', 'build.py'],
+            capture_output=True, text=True, check=True
+        ).stdout.strip()
+        if status:
+            mtimes = get_file_mtimes()
+            if mtimes:
+                dt = datetime.fromtimestamp(max(mtimes.values()))
+                return dt.strftime('%b %d, %Y')
+        commit_ts = subprocess.run(
+            ['git', 'log', '-1', '--format=%ct'],
+            capture_output=True, text=True, check=True
+        ).stdout.strip()
+        if commit_ts:
+            dt = datetime.fromtimestamp(int(commit_ts), tz=timezone.utc)
+            return dt.strftime('%b %d, %Y')
+    except Exception:
+        pass
+    return datetime.now(timezone.utc).strftime('%b %d, %Y')
+
+
 def build_site():
     """Builds the complete single-page site into _site/."""
     prepare_output_directory()
 
     base_html = load_template('base.html')
-    index_body = render_template(load_template('index.html'), {})
+    index_body = render_template(load_template('index.html'), {
+        'last_updated': get_last_updated_date()
+    })
     full_html = render_template(base_html, {
         'title': 'the diodesign program',
         'body_class': 'home-page',
@@ -180,7 +206,7 @@ def run_server():
             if current_mtimes != last_mtimes:
                 print("\nChange detected! Rebuilding site...")
                 try:
-                    build_site()
+                    subprocess.run([sys.executable, 'build.py'], check=True)
                     print("Rebuild complete.")
                 except Exception as e:
                     print(f"Error during build: {e}")

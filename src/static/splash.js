@@ -1003,7 +1003,7 @@ function decodeRiscv(inst, xlen) {
         activeNodes = ['node-pc', 'node-dec', 'node-regs', 'node-alu', 'node-wb'];
 
         const validF7 = funct7 === 0x00 || (funct7 === 0x20 && (funct3 === 0 || funct3 === 5));
-        const validW = !isW || funct3 === 0 || funct3 === 1 || funct3 === 5;
+        const validW = !isW || (xlen === 64 && (funct3 === 0 || funct3 === 1 || funct3 === 5));
         if (!validF7 || !validW) {
             opName = 'RESERVED';
             asm = `.word 0x${u.toString(16).padStart(8, '0')}`;
@@ -1067,7 +1067,7 @@ function decodeRiscv(inst, xlen) {
         const validShiftUpper = funct3 === 1
             ? upperShift === 0
             : (upperShift === 0 || upperShift === (isWordShift ? 0x20 : 0x10));
-        const validW = !isW || funct3 === 0 || funct3 === 1 || funct3 === 5;
+        const validW = !isW || (xlen === 64 && (funct3 === 0 || funct3 === 1 || funct3 === 5));
 
         if ((isShift && !validShiftUpper) || !validW) {
             opName = 'RESERVED';
@@ -1127,64 +1127,104 @@ function decodeRiscv(inst, xlen) {
         }
     } else if (opcode === 0x03) {
         fmt = 'I-Type';
-        opName = 'LOAD';
         const lmap = { 0: 'lb', 1: 'lh', 2: 'lw', 3: 'ld', 4: 'lbu', 5: 'lhu', 6: 'lwu' };
-        const m = lmap[funct3] || (xlen === 64 ? 'ld' : 'lw');
-        asm = `${m} x${rd}, ${immI}(x${rs1})`;
-        aluOp = 'ADDR+';
-        const addr = (r1Val + BigInt(immI)) & mask;
-        memMode = `Read ${m.toUpperCase()}`;
-        memSub = `@0x${addr.toString(16)}`;
-        wbVal = `Mem[0x${addr.toString(16)}]`;
-        rtl = `x${rd} ← Mem[x${rs1} + ${immI}]`;
-        ctrl = 'RegWrite=1 · ALUSrc=Imm · MemRead=1';
-        activeWires = ['wire-pc-dec', 'wire-dec-rs1', 'wire-dec-imm', 'wire-rs1-alu', 'wire-imm-alu', 'wire-alu-mem', 'wire-mem-wb'];
-        activeNodes = ['node-pc', 'node-dec', 'node-regs', 'node-imm', 'node-alu', 'node-mem', 'node-wb'];
+        const m = lmap[funct3];
+        if (!m || (xlen === 32 && (funct3 === 3 || funct3 === 6))) {
+            opName = 'RESERVED';
+            asm = `.word 0x${u.toString(16).padStart(8, '0')}`;
+            aluOp = 'ILL';
+            wbText = 'Trap';
+            wbVal = 'Illegal Inst';
+            rtl = 'Exception: Reserved load funct3 encoding';
+            ctrl = 'RegWrite=0 · Trap=IllegalInst';
+        } else {
+            opName = 'LOAD';
+            asm = `${m} x${rd}, ${immI}(x${rs1})`;
+            aluOp = 'ADDR+';
+            const addr = (r1Val + BigInt(immI)) & mask;
+            memMode = `Read ${m.toUpperCase()}`;
+            memSub = `@0x${addr.toString(16)}`;
+            wbVal = `Mem[0x${addr.toString(16)}]`;
+            rtl = `x${rd} ← Mem[x${rs1} + ${immI}]`;
+            ctrl = 'RegWrite=1 · ALUSrc=Imm · MemRead=1';
+            activeWires = ['wire-pc-dec', 'wire-dec-rs1', 'wire-dec-imm', 'wire-rs1-alu', 'wire-imm-alu', 'wire-alu-mem', 'wire-mem-wb'];
+            activeNodes = ['node-pc', 'node-dec', 'node-regs', 'node-imm', 'node-alu', 'node-mem', 'node-wb'];
+        }
     } else if (opcode === 0x67) {
         fmt = 'I-Type';
-        opName = 'JALR';
-        asm = `jalr x${rd}, ${immI}(x${rs1})`;
-        aluOp = 'JUMP+';
-        wbText = `x${rd}`;
-        wbVal = '0x80000004';
-        rtl = `x${rd} ← PC + 4; PC ← (x${rs1} + ${immI}) & ~1`;
-        ctrl = 'RegWrite=1 · ALUSrc=Imm · Jump=1';
-        activeWires = ['wire-pc-dec', 'wire-dec-rs1', 'wire-dec-imm', 'wire-rs1-alu', 'wire-imm-alu', 'wire-alu-wb'];
-        activeNodes = ['node-pc', 'node-dec', 'node-regs', 'node-imm', 'node-alu', 'node-wb'];
+        if (funct3 !== 0) {
+            opName = 'RESERVED';
+            asm = `.word 0x${u.toString(16).padStart(8, '0')}`;
+            aluOp = 'ILL';
+            wbText = 'Trap';
+            wbVal = 'Illegal Inst';
+            rtl = 'Exception: Reserved JALR funct3 encoding';
+            ctrl = 'RegWrite=0 · Trap=IllegalInst';
+        } else {
+            opName = 'JALR';
+            asm = `jalr x${rd}, ${immI}(x${rs1})`;
+            aluOp = 'JUMP+';
+            wbText = `x${rd}`;
+            wbVal = '0x80000004';
+            rtl = `x${rd} ← PC + 4; PC ← (x${rs1} + ${immI}) & ~1`;
+            ctrl = 'RegWrite=1 · ALUSrc=Imm · Jump=1';
+            activeWires = ['wire-pc-dec', 'wire-dec-rs1', 'wire-dec-imm', 'wire-rs1-alu', 'wire-imm-alu', 'wire-alu-wb'];
+            activeNodes = ['node-pc', 'node-dec', 'node-regs', 'node-imm', 'node-alu', 'node-wb'];
+        }
     } else if (opcode === 0x23) {
         fmt = 'S-Type';
-        opName = 'STORE';
         immVal = immS;
         const smap = { 0: 'sb', 1: 'sh', 2: 'sw', 3: 'sd' };
-        const m = smap[funct3] || (xlen === 64 ? 'sd' : 'sw');
-        asm = `${m} x${rs2}, ${immS}(x${rs1})`;
-        aluOp = 'ADDR+';
-        const addr = (r1Val + BigInt(immS)) & mask;
-        memMode = `Write ${m.toUpperCase()}`;
-        memSub = `@0x${addr.toString(16)}`;
-        wbText = 'No Reg Write';
-        wbVal = `Mem[0x${addr.toString(16)}]`;
-        rtl = `Mem[x${rs1} + ${immS}] ← x${rs2}`;
-        ctrl = 'RegWrite=0 · ALUSrc=Imm · MemWrite=1';
-        activeWires = ['wire-pc-dec', 'wire-dec-rs1', 'wire-dec-rs2', 'wire-dec-imm', 'wire-rs1-alu', 'wire-imm-alu', 'wire-alu-mem', 'wire-rs2-mem'];
-        activeNodes = ['node-pc', 'node-dec', 'node-regs', 'node-imm', 'node-alu', 'node-mem'];
+        const m = smap[funct3];
+        if (!m || (xlen === 32 && funct3 === 3)) {
+            opName = 'RESERVED';
+            asm = `.word 0x${u.toString(16).padStart(8, '0')}`;
+            aluOp = 'ILL';
+            wbText = 'Trap';
+            wbVal = 'Illegal Inst';
+            rtl = 'Exception: Reserved store funct3 encoding';
+            ctrl = 'RegWrite=0 · Trap=IllegalInst';
+        } else {
+            opName = 'STORE';
+            asm = `${m} x${rs2}, ${immS}(x${rs1})`;
+            aluOp = 'ADDR+';
+            const addr = (r1Val + BigInt(immS)) & mask;
+            memMode = `Write ${m.toUpperCase()}`;
+            memSub = `@0x${addr.toString(16)}`;
+            wbText = 'No Reg Write';
+            wbVal = `Mem[0x${addr.toString(16)}]`;
+            rtl = `Mem[x${rs1} + ${immS}] ← x${rs2}`;
+            ctrl = 'RegWrite=0 · ALUSrc=Imm · MemWrite=1';
+            activeWires = ['wire-pc-dec', 'wire-dec-rs1', 'wire-dec-rs2', 'wire-dec-imm', 'wire-rs1-alu', 'wire-imm-alu', 'wire-alu-mem', 'wire-rs2-mem'];
+            activeNodes = ['node-pc', 'node-dec', 'node-regs', 'node-imm', 'node-alu', 'node-mem'];
+        }
     } else if (opcode === 0x63) {
         fmt = 'B-Type';
-        opName = 'BRANCH';
         immVal = immB;
         const bmap = { 0: 'beq', 1: 'bne', 4: 'blt', 5: 'bge', 6: 'bltu', 7: 'bgeu' };
-        const m = bmap[funct3] || 'beq';
-        asm = `${m} x${rs1}, x${rs2}, ${immB}`;
-        aluOp = 'CMP';
-        memMode = 'Branch Unit';
-        memSub = `PC + ${immB}`;
-        wbText = 'PC Next';
-        wbVal = `0x${(0x80000000 + immB).toString(16)}`;
-        const cmpSym = { beq: '==', bne: '!=', blt: '<s', bge: '>=s', bltu: '<u', bgeu: '>=u' }[m] || '==';
-        rtl = `if (x${rs1} ${cmpSym} x${rs2}) PC ← PC + ${immB}`;
-        ctrl = 'RegWrite=0 · ALUSrc=rs2 · Branch=1';
-        activeWires = ['wire-pc-dec', 'wire-dec-rs1', 'wire-dec-rs2', 'wire-dec-imm', 'wire-rs1-alu', 'wire-rs2-alu', 'wire-alu-mem'];
-        activeNodes = ['node-pc', 'node-dec', 'node-regs', 'node-imm', 'node-alu', 'node-mem'];
+        const m = bmap[funct3];
+        if (!m) {
+            opName = 'RESERVED';
+            asm = `.word 0x${u.toString(16).padStart(8, '0')}`;
+            aluOp = 'ILL';
+            wbText = 'Trap';
+            wbVal = 'Illegal Inst';
+            rtl = 'Exception: Reserved branch funct3 encoding';
+            ctrl = 'RegWrite=0 · Trap=IllegalInst';
+        } else {
+            opName = 'BRANCH';
+            asm = `${m} x${rs1}, x${rs2}, ${immB}`;
+            aluOp = 'CMP';
+            memMode = 'Branch Unit';
+            memSub = `PC + ${immB}`;
+            wbText = 'PC Next';
+            wbVal = `0x${(0x80000000 + immB).toString(16)}`;
+            const cmpSym = { beq: '==', bne: '!=', blt: '<s', bge: '>=s', bltu: '<u', bgeu: '>=u' }[m] || '==';
+            rtl = `if (x${rs1} ${cmpSym} x${rs2}) PC ← PC + ${immB}`;
+            ctrl = 'RegWrite=0 · ALUSrc=rs2 · Branch=1';
+            activeWires = ['wire-pc-dec', 'wire-dec-rs1', 'wire-dec-rs2', 'wire-dec-imm', 'wire-rs1-alu', 'wire-rs2-alu', 'wire-alu-mem'];
+            activeNodes = ['node-pc', 'node-dec', 'node-regs', 'node-imm', 'node-alu', 'node-mem'];
+        }
     } else if (opcode === 0x37 || opcode === 0x17) {
         fmt = 'U-Type';
         const isLui = opcode === 0x37;
@@ -1496,10 +1536,11 @@ function setupRiscvExplorer() {
         });
 
         if (execBar) {
+            const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             execBar.innerHTML = `
-                <span>Operation: <strong>${d.rtl}</strong></span>
-                <span>Control: <strong>${d.ctrl}</strong></span>
-                <span>Result (${d.wbText}): <strong>${d.wbVal}</strong></span>
+                <span>Operation: <strong>${esc(d.rtl)}</strong></span>
+                <span>Control: <strong>${esc(d.ctrl)}</strong></span>
+                <span>Result (${esc(d.wbText)}): <strong>${esc(d.wbVal)}</strong></span>
             `;
         }
     }
