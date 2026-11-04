@@ -161,6 +161,7 @@ code {
     padding: 1.15rem 1.5rem;
     background: transparent;
     border: none;
+    outline: none;
     cursor: pointer;
     font-family: 'Outfit', sans-serif;
     text-align: center;
@@ -385,6 +386,7 @@ code {
     height: 64px;
     padding: 0;
     border: none;
+    outline: none;
     background: transparent;
     cursor: pointer;
     pointer-events: auto;
@@ -438,6 +440,7 @@ code {
 
 .rv-back-btn {
     border: 1px solid rgba(37, 99, 235, 0.22);
+    outline: none;
     background: rgba(37, 99, 235, 0.06);
     color: var(--highlight-color);
     font-family: 'Outfit', sans-serif;
@@ -482,6 +485,7 @@ code {
 
 .rv-xlen-btn {
     border: none;
+    outline: none;
     background: transparent;
     color: var(--muted-color);
     font-family: 'Outfit', sans-serif;
@@ -568,6 +572,7 @@ code {
 
 .rv-preset-pill {
     border: 1px solid rgba(15, 23, 42, 0.1);
+    outline: none;
     background: #f8fafc;
     color: var(--muted-color);
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -632,6 +637,7 @@ code {
     height: 28px;
     border-radius: 5px;
     border: 1px solid rgba(37, 99, 235, 0.22);
+    outline: none;
     background: #ffffff;
     color: var(--text-color);
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;

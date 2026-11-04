@@ -431,7 +431,7 @@ for (const tc of cases) {
     if (verbose) {
         const bin = w.toString(2).padStart(32, '0');
         const bitSlices = `${bin.slice(0,7)}_${bin.slice(7,12)}_${bin.slice(12,17)}_${bin.slice(17,20)}_${bin.slice(20,25)}_${bin.slice(25,32)}`;
-        const immDisp = decoded.fmt === 'U-Type'
+        const immDisp = decoded.fmt === 'U-type'
             ? `0x${((w & 0xfffff000) >>> 0).toString(16)}`
             : `${decoded.immVal >= 0 ? '+' : ''}${decoded.immVal}`;
         details.push({

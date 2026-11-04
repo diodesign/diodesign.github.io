@@ -12,7 +12,7 @@ function setupAccordion() {
         const trigger = item.querySelector('.accordion-trigger');
         if (!trigger) return;
 
-        trigger.addEventListener('click', () => {
+        trigger.addEventListener('click', (e) => {
             const isCurrentlyOpen = item.classList.contains('active');
 
             items.forEach((otherItem) => {
@@ -26,6 +26,10 @@ function setupAccordion() {
             if (!isCurrentlyOpen) {
                 item.classList.add('active');
                 trigger.setAttribute('aria-expanded', 'true');
+            }
+
+            if (e && e.detail > 0) {
+                trigger.blur();
             }
         });
     });
@@ -486,7 +490,7 @@ function buildForegroundPromontories() {
     foregroundPath = path;
 }
 
-function renderFrame(time) {
+function renderFrame(time, advanceSim = true) {
     if (!ctx || !width || !height) return;
 
     // 1. Blit pre-rendered static mountain vista
@@ -496,15 +500,18 @@ function renderFrame(time) {
     ctx.save();
     ctx.globalAlpha = 1 - currentDuskT * 0.35;
     for (const c of clouds) {
-        c.x += c.speed + c.boostVx;
-        c.boostVx *= 0.94;
-        c.puffVel = (c.puffVel || 0) * 0.78 + ((c.targetScale || 1) - (c.scale || 1)) * 0.16;
-        c.scale = (c.scale || 1) + c.puffVel;
+        if (advanceSim) {
+            c.x += c.speed + c.boostVx;
+            c.boostVx *= 0.94;
+            c.puffVel = (c.puffVel || 0) * 0.78 + ((c.targetScale || 1) - (c.scale || 1)) * 0.16;
+            c.scale = (c.scale || 1) + c.puffVel;
+        }
 
-        const dw = c.sw * c.scale;
-        const dh = c.sh * (1 + (c.scale - 1) * 1.35);
+        const scale = c.scale || 1;
+        const dw = c.sw * scale;
+        const dh = c.sh * (1 + (scale - 1) * 1.35);
 
-        if (c.x - dw * 0.5 > width) {
+        if (advanceSim && c.x - dw * 0.5 > width) {
             c.x = -c.sw * 0.5;
             c.scale = 1.0;
             c.targetScale = 1.0;
@@ -583,11 +590,13 @@ function renderFrame(time) {
     // 5. Interactive Expanding Water Ripples
     for (let i = waterRipples.length - 1; i >= 0; i--) {
         const rp = waterRipples[i];
-        rp.r += 1.35;
-        rp.alpha *= 0.965;
-        if (rp.alpha < 0.02) {
-            waterRipples.splice(i, 1);
-            continue;
+        if (advanceSim) {
+            rp.r += 1.35;
+            rp.alpha *= 0.965;
+            if (rp.alpha < 0.02) {
+                waterRipples.splice(i, 1);
+                continue;
+            }
         }
         const ryRadius = rp.r * 0.26;
         const rpGrad = ctx.createLinearGradient(0, rp.y - ryRadius, 0, rp.y + ryRadius);
@@ -614,15 +623,17 @@ function renderFrame(time) {
     ctx.strokeStyle = 'rgba(30, 58, 138, 0.6)';
     ctx.lineWidth = 1.35;
     for (const b of birds) {
-        b.x += b.vx;
-        b.y += b.vy + Math.sin(time * 0.001 + b.wingPhase) * 0.03;
-        b.vx = lerp(b.vx, 0.32, 0.01);
-        b.vy = lerp(b.vy, 0, 0.02);
-        b.wingPhase += b.wingSpeed;
+        if (advanceSim) {
+            b.x += b.vx;
+            b.y += b.vy + Math.sin(time * 0.001 + b.wingPhase) * 0.03;
+            b.vx = lerp(b.vx, 0.32, 0.01);
+            b.vy = lerp(b.vy, 0, 0.02);
+            b.wingPhase += b.wingSpeed;
 
-        if (b.x > width + 30) {
-            b.x = -30;
-            b.y = height * (0.14 + Math.random() * 0.18);
+            if (b.x > width + 30) {
+                b.x = -30;
+                b.y = height * (0.14 + Math.random() * 0.18);
+            }
         }
 
         const flap = Math.sin(b.wingPhase) * b.scale * 0.55;
@@ -681,6 +692,7 @@ function hitTestLandscape(mx, my) {
 
 function setupLandscapeInteractions() {
     if (!canvas) return;
+    let sunDragRafPending = false;
 
     canvas.addEventListener('mousemove', (e) => {
         if (smallScreenQuery.matches) return;
@@ -692,9 +704,15 @@ function setupLandscapeInteractions() {
             sunCustomPos = true;
             sunX = Math.max(40, Math.min(width - 40, mx));
             sunY = Math.max(36, Math.min(waterLineY - 20, my));
-            buildStaticLandscape();
-            renderFrame(performance.now());
             canvas.style.cursor = 'grabbing';
+            if (!sunDragRafPending) {
+                sunDragRafPending = true;
+                requestAnimationFrame(() => {
+                    sunDragRafPending = false;
+                    buildStaticLandscape();
+                    renderFrame(lastFrameTime || performance.now(), false);
+                });
+            }
             return;
         }
 
@@ -785,7 +803,7 @@ function resizeAndRebuild() {
 
     buildStaticLandscape();
     initAnimatedElements();
-    renderFrame(performance.now());
+    renderFrame(lastFrameTime || performance.now(), false);
 
     if (!rafId) {
         rafId = requestAnimationFrame(animate);
@@ -981,7 +999,7 @@ function decodeRiscv(inst, xlen) {
     const r1Val = (rs1 === 0 ? 0n : BigInt(0x100 + rs1 * 16)) & mask;
     const r2Val = (rs2 === 0 ? 0n : BigInt(0x020 + rs2 * 8)) & mask;
 
-    let fmt = 'I-Type';
+    let fmt = 'I-type';
     let opName = 'OP-IMM';
     let asm = `addi x${rd}, x${rs1}, ${immI}`;
     let aluOp = 'ADD';
@@ -996,9 +1014,9 @@ function decodeRiscv(inst, xlen) {
     let activeNodes = ['node-pc', 'node-dec', 'node-regs', 'node-imm', 'node-alu', 'node-wb'];
 
     if (opcode === 0x33 || opcode === 0x3b) {
-        fmt = 'R-Type';
+        fmt = 'R-type';
         const isW = opcode === 0x3b;
-        opName = isW ? 'OP-32 (RV64)' : 'OP (Reg)';
+        opName = isW ? 'OP-32 (RV64)' : 'OP (reg)';
         activeWires = ['wire-pc-dec', 'wire-dec-rs1', 'wire-dec-rs2', 'wire-rs1-alu', 'wire-rs2-alu', 'wire-alu-wb'];
         activeNodes = ['node-pc', 'node-dec', 'node-regs', 'node-alu', 'node-wb'];
 
@@ -1009,8 +1027,8 @@ function decodeRiscv(inst, xlen) {
             asm = `.word 0x${u.toString(16).padStart(8, '0')}`;
             aluOp = 'ILL';
             wbText = 'Trap';
-            wbVal = 'Illegal Inst';
-            rtl = 'Exception: Illegal funct7/funct3 encoding';
+            wbVal = 'Illegal inst';
+            rtl = 'Exception: illegal funct7/funct3 encoding';
             ctrl = 'RegWrite=0 · Trap=IllegalInst';
         } else {
             const isSub = (funct7 & 0x20) !== 0;
@@ -1058,7 +1076,7 @@ function decodeRiscv(inst, xlen) {
             wbVal = `0x${res.toString(16)}`;
         }
     } else if (opcode === 0x13 || opcode === 0x1b) {
-        fmt = 'I-Type';
+        fmt = 'I-type';
         const isW = opcode === 0x1b;
         opName = isW ? 'OP-IMM-32' : 'OP-IMM';
         const isShift = funct3 === 1 || funct3 === 5;
@@ -1076,8 +1094,8 @@ function decodeRiscv(inst, xlen) {
             asm = `.word 0x${u.toString(16).padStart(8, '0')}`;
             aluOp = 'ILL';
             wbText = 'Trap';
-            wbVal = 'Illegal Inst';
-            rtl = 'Exception: Reserved shift/immediate funct bits';
+            wbVal = 'Illegal inst';
+            rtl = 'Exception: reserved shift or immediate funct bits';
             ctrl = 'RegWrite=0 · Trap=IllegalInst';
         } else {
             const map = {
@@ -1126,7 +1144,7 @@ function decodeRiscv(inst, xlen) {
             wbVal = `0x${res.toString(16)}`;
         }
     } else if (opcode === 0x03) {
-        fmt = 'I-Type';
+        fmt = 'I-type';
         const lmap = { 0: 'lb', 1: 'lh', 2: 'lw', 3: 'ld', 4: 'lbu', 5: 'lhu', 6: 'lwu' };
         const m = lmap[funct3];
         if (!m || (xlen === 32 && (funct3 === 3 || funct3 === 6))) {
@@ -1134,8 +1152,8 @@ function decodeRiscv(inst, xlen) {
             asm = `.word 0x${u.toString(16).padStart(8, '0')}`;
             aluOp = 'ILL';
             wbText = 'Trap';
-            wbVal = 'Illegal Inst';
-            rtl = 'Exception: Reserved load funct3 encoding';
+            wbVal = 'Illegal inst';
+            rtl = 'Exception: reserved load funct3 encoding';
             ctrl = 'RegWrite=0 · Trap=IllegalInst';
         } else {
             opName = 'LOAD';
@@ -1151,14 +1169,14 @@ function decodeRiscv(inst, xlen) {
             activeNodes = ['node-pc', 'node-dec', 'node-regs', 'node-imm', 'node-alu', 'node-mem', 'node-wb'];
         }
     } else if (opcode === 0x67) {
-        fmt = 'I-Type';
+        fmt = 'I-type';
         if (funct3 !== 0) {
             opName = 'RESERVED';
             asm = `.word 0x${u.toString(16).padStart(8, '0')}`;
             aluOp = 'ILL';
             wbText = 'Trap';
-            wbVal = 'Illegal Inst';
-            rtl = 'Exception: Reserved JALR funct3 encoding';
+            wbVal = 'Illegal inst';
+            rtl = 'Exception: reserved JALR funct3 encoding';
             ctrl = 'RegWrite=0 · Trap=IllegalInst';
         } else {
             opName = 'JALR';
@@ -1172,7 +1190,7 @@ function decodeRiscv(inst, xlen) {
             activeNodes = ['node-pc', 'node-dec', 'node-regs', 'node-imm', 'node-alu', 'node-wb'];
         }
     } else if (opcode === 0x23) {
-        fmt = 'S-Type';
+        fmt = 'S-type';
         immVal = immS;
         const smap = { 0: 'sb', 1: 'sh', 2: 'sw', 3: 'sd' };
         const m = smap[funct3];
@@ -1181,8 +1199,8 @@ function decodeRiscv(inst, xlen) {
             asm = `.word 0x${u.toString(16).padStart(8, '0')}`;
             aluOp = 'ILL';
             wbText = 'Trap';
-            wbVal = 'Illegal Inst';
-            rtl = 'Exception: Reserved store funct3 encoding';
+            wbVal = 'Illegal inst';
+            rtl = 'Exception: reserved store funct3 encoding';
             ctrl = 'RegWrite=0 · Trap=IllegalInst';
         } else {
             opName = 'STORE';
@@ -1191,7 +1209,7 @@ function decodeRiscv(inst, xlen) {
             const addr = (r1Val + BigInt(immS)) & mask;
             memMode = `Write ${m.toUpperCase()}`;
             memSub = `@0x${addr.toString(16)}`;
-            wbText = 'No Reg Write';
+            wbText = 'No reg write';
             wbVal = `Mem[0x${addr.toString(16)}]`;
             rtl = `Mem[x${rs1} + ${immS}] ← x${rs2}`;
             ctrl = 'RegWrite=0 · ALUSrc=Imm · MemWrite=1';
@@ -1199,7 +1217,7 @@ function decodeRiscv(inst, xlen) {
             activeNodes = ['node-pc', 'node-dec', 'node-regs', 'node-imm', 'node-alu', 'node-mem'];
         }
     } else if (opcode === 0x63) {
-        fmt = 'B-Type';
+        fmt = 'B-type';
         immVal = immB;
         const bmap = { 0: 'beq', 1: 'bne', 4: 'blt', 5: 'bge', 6: 'bltu', 7: 'bgeu' };
         const m = bmap[funct3];
@@ -1208,16 +1226,16 @@ function decodeRiscv(inst, xlen) {
             asm = `.word 0x${u.toString(16).padStart(8, '0')}`;
             aluOp = 'ILL';
             wbText = 'Trap';
-            wbVal = 'Illegal Inst';
-            rtl = 'Exception: Reserved branch funct3 encoding';
+            wbVal = 'Illegal inst';
+            rtl = 'Exception: reserved branch funct3 encoding';
             ctrl = 'RegWrite=0 · Trap=IllegalInst';
         } else {
             opName = 'BRANCH';
             asm = `${m} x${rs1}, x${rs2}, ${immB}`;
             aluOp = 'CMP';
-            memMode = 'Branch Unit';
+            memMode = 'Branch unit';
             memSub = `PC + ${immB}`;
-            wbText = 'PC Next';
+            wbText = 'Next PC';
             wbVal = `0x${(0x80000000 + immB).toString(16)}`;
             const cmpSym = { beq: '==', bne: '!=', blt: '<s', bge: '>=s', bltu: '<u', bgeu: '>=u' }[m] || '==';
             rtl = `if (x${rs1} ${cmpSym} x${rs2}) PC ← PC + ${immB}`;
@@ -1226,7 +1244,7 @@ function decodeRiscv(inst, xlen) {
             activeNodes = ['node-pc', 'node-dec', 'node-regs', 'node-imm', 'node-alu', 'node-mem'];
         }
     } else if (opcode === 0x37 || opcode === 0x17) {
-        fmt = 'U-Type';
+        fmt = 'U-type';
         const isLui = opcode === 0x37;
         opName = isLui ? 'LUI' : 'AUIPC';
         const upper20 = (u >>> 12) & 0xfffff;
@@ -1240,7 +1258,7 @@ function decodeRiscv(inst, xlen) {
         activeWires = ['wire-pc-dec', 'wire-dec-imm', 'wire-imm-alu', 'wire-alu-wb'];
         activeNodes = ['node-pc', 'node-dec', 'node-imm', 'node-alu', 'node-wb'];
     } else if (opcode === 0x6f) {
-        fmt = 'J-Type';
+        fmt = 'J-type';
         opName = 'JAL';
         immVal = immJ;
         asm = `jal x${rd}, ${immJ}`;
@@ -1252,12 +1270,12 @@ function decodeRiscv(inst, xlen) {
         activeWires = ['wire-pc-dec', 'wire-dec-imm', 'wire-imm-alu', 'wire-alu-wb'];
         activeNodes = ['node-pc', 'node-dec', 'node-imm', 'node-alu', 'node-wb'];
     } else {
-        fmt = 'Custom/Raw';
+        fmt = 'Custom/raw';
         opName = `OP 0x${opcode.toString(16)}`;
         asm = `.word 0x${u.toString(16).padStart(8, '0')}`;
         aluOp = 'NOP';
         wbVal = `0x${u.toString(16)}`;
-        rtl = 'Unrecognized / Custom Opcode';
+        rtl = 'Unrecognized or custom opcode';
         ctrl = 'RegWrite=0 · Mem=Off';
     }
 
@@ -1270,11 +1288,11 @@ function decodeRiscv(inst, xlen) {
 
 function getBitFieldType(bit, fmt, u) {
     if (bit <= 6) return 'opcode';
-    if (fmt === 'U-Type' || fmt === 'J-Type') return bit <= 11 ? 'rd' : 'imm';
-    if (bit <= 11) return (fmt === 'S-Type' || fmt === 'B-Type') ? 'imm' : 'rd';
+    if (fmt === 'U-type' || fmt === 'J-type') return bit <= 11 ? 'rd' : 'imm';
+    if (bit <= 11) return (fmt === 'S-type' || fmt === 'B-type') ? 'imm' : 'rd';
     if (bit <= 14) return 'funct3';
     if (bit <= 19) return 'rs1';
-    if (fmt === 'I-Type' && u !== undefined) {
+    if (fmt === 'I-type' && u !== undefined) {
         const op = u & 0x7f;
         const f3 = (u >>> 12) & 0x7;
         if ((op === 0x13 || op === 0x1b) && (f3 === 1 || f3 === 5)) {
@@ -1282,8 +1300,8 @@ function getBitFieldType(bit, fmt, u) {
             return bit <= shamtTop ? 'imm' : 'funct7';
         }
     }
-    if (bit <= 24) return fmt === 'I-Type' ? 'imm' : 'rs2';
-    return fmt === 'R-Type' ? 'funct7' : 'imm';
+    if (bit <= 24) return fmt === 'I-type' ? 'imm' : 'rs2';
+    return fmt === 'R-type' ? 'funct7' : 'imm';
 }
 
 function getFormatFieldSpans(d, xlen) {
@@ -1292,7 +1310,7 @@ function getFormatFieldSpans(d, xlen) {
     const hexF7 = `0x${d.funct7.toString(16).padStart(2, '0')}`;
     const signedImm = `${d.immVal >= 0 ? '+' : ''}${d.immVal}`;
 
-    if (d.fmt === 'R-Type') {
+    if (d.fmt === 'R-type') {
         return {
             spans: [
                 { span: 7, hi: 31, lo: 25, field: 'funct7', label: 'funct7 [31:25]', val: hexF7 },
@@ -1302,11 +1320,11 @@ function getFormatFieldSpans(d, xlen) {
                 { span: 5, hi: 11, lo: 7,  field: 'rd',     label: 'rd [11:7]',      val: `x${d.rd}` },
                 { span: 7, hi: 6,  lo: 0,  field: 'opcode', label: 'opcode [6:0]',   val: hexOp }
             ],
-            note: `<strong>R-Type (Register–Register):</strong> <code>funct7</code> and <code>funct3</code> select the ALU operation on <code>rs1 (x${d.rs1})</code> and <code>rs2 (x${d.rs2})</code>, writing to <code>rd (x${d.rd})</code>.`
+            note: `<strong>R-type (register–register):</strong> <code>funct7</code> and <code>funct3</code> select the ALU operation on <code>rs1 (x${d.rs1})</code> and <code>rs2 (x${d.rs2})</code>, writing to <code>rd (x${d.rd})</code>.`
         };
     }
 
-    if (d.fmt === 'I-Type') {
+    if (d.fmt === 'I-type') {
         const isShift = (d.opcode === 0x13 || d.opcode === 0x1b) && (d.funct3 === 1 || d.funct3 === 5);
         if (isShift) {
             const isWordShift = d.opcode === 0x1b || xlen === 32;
@@ -1317,11 +1335,11 @@ function getFormatFieldSpans(d, xlen) {
             const fVal = `0x${fNum.toString(16).padStart(2, '0')}`;
             let shiftNote;
             if (d.opName === 'RESERVED') {
-                shiftNote = `<strong>Reserved Shift Encoding:</strong> Upper bits <code>[31:${shamtHi + 1}] = ${fVal}</code> are not valid for <code>funct3 = ${hexF3}</code> (left shifts require <code>0x00</code>; right shifts allow <code>0x00</code> for logical or bit 30 = <code>1</code> for arithmetic).`;
+                shiftNote = `<strong>Reserved shift encoding:</strong> Upper bits <code>[31:${shamtHi + 1}] = ${fVal}</code> are not valid for <code>funct3 = ${hexF3}</code> (left shifts require <code>0x00</code>; right shifts allow <code>0x00</code> for logical or bit 30 = <code>1</code> for arithmetic).`;
             } else if (d.funct3 === 1) {
-                shiftNote = `<strong>I-Type (Left Shift Immediate):</strong> Bits <code>[${shamtHi}:20]</code> set <code>shamt = ${d.immVal}</code>. Left shifts are always logical (upper bits <code>[31:${shamtHi + 1}]</code> must be <code>0x00</code>); flip <strong>bit 14</strong> (<code>funct3 = 0x5</code>) for right shifts where <strong>bit 30</strong> selects logical (<code>srli</code>) vs. arithmetic (<code>srai</code>).`;
+                shiftNote = `<strong>I-type (left shift immediate):</strong> Bits <code>[${shamtHi}:20]</code> set <code>shamt = ${d.immVal}</code>. Left shifts are always logical (upper bits <code>[31:${shamtHi + 1}]</code> must be <code>0x00</code>); flip <strong>bit 14</strong> (<code>funct3 = 0x5</code>) for right shifts where <strong>bit 30</strong> selects logical (<code>srli</code>) vs. arithmetic (<code>srai</code>).`;
             } else {
-                shiftNote = `<strong>I-Type (Right Shift Immediate):</strong> Bits <code>[${shamtHi}:20]</code> set <code>shamt = ${d.immVal}</code>, and <strong>bit 30</strong> selects logical (<code>0 = ${isWordShift ? 'srliw' : 'srli'}</code>) vs. arithmetic (<code>1 = ${isWordShift ? 'sraiw' : 'srai'}</code>) right shift.`;
+                shiftNote = `<strong>I-type (right shift immediate):</strong> Bits <code>[${shamtHi}:20]</code> set <code>shamt = ${d.immVal}</code>, and <strong>bit 30</strong> selects logical (<code>0 = ${isWordShift ? 'srliw' : 'srli'}</code>) vs. arithmetic (<code>1 = ${isWordShift ? 'sraiw' : 'srai'}</code>) right shift.`;
             }
             return {
                 spans: [
@@ -1343,11 +1361,11 @@ function getFormatFieldSpans(d, xlen) {
                 { span: 5,  hi: 11, lo: 7,  field: 'rd',     label: 'rd [11:7]',         val: `x${d.rd}` },
                 { span: 7,  hi: 6,  lo: 0,  field: 'opcode', label: 'opcode [6:0]',      val: hexOp }
             ],
-            note: `<strong>I-Type (12-Bit Immediate):</strong> Bits <code>[31:20]</code> form a contiguous 12-bit signed immediate (<code>${signedImm}</code>) combined with <code>rs1 (x${d.rs1})</code> and written to <code>rd (x${d.rd})</code>.`
+            note: `<strong>I-type (12-bit immediate):</strong> Bits <code>[31:20]</code> form a contiguous 12-bit signed immediate (<code>${signedImm}</code>) combined with <code>rs1 (x${d.rs1})</code> and written to <code>rd (x${d.rd})</code>.`
         };
     }
 
-    if (d.fmt === 'S-Type') {
+    if (d.fmt === 'S-type') {
         const hi7 = d.funct7.toString(2).padStart(7, '0');
         const lo5 = d.rd.toString(2).padStart(5, '0');
         return {
@@ -1359,11 +1377,11 @@ function getFormatFieldSpans(d, xlen) {
                 { span: 5, hi: 11, lo: 7,  field: 'imm',    label: 'imm[4:0] [11:7]',   val: `0b${lo5}` },
                 { span: 7, hi: 6,  lo: 0,  field: 'opcode', label: 'opcode [6:0]',      val: hexOp }
             ],
-            note: `<strong>S-Type Split Immediate:</strong> Stores have no <code>rd</code> register — bits <code>[11:7]</code> (where <code>rd</code> normally sits) join bits <code>[31:25]</code> to form <code>{imm[11:5], imm[4:0]} = ${signedImm}</code> added to base <code>rs1 (x${d.rs1})</code>.`
+            note: `<strong>S-type split immediate:</strong> Stores have no <code>rd</code> register — bits <code>[11:7]</code> (where <code>rd</code> normally sits) join bits <code>[31:25]</code> to form <code>{imm[11:5], imm[4:0]} = ${signedImm}</code> added to base <code>rs1 (x${d.rs1})</code>.`
         };
     }
 
-    if (d.fmt === 'B-Type') {
+    if (d.fmt === 'B-type') {
         const hi7 = d.funct7.toString(2).padStart(7, '0');
         const lo5 = d.rd.toString(2).padStart(5, '0');
         return {
@@ -1375,11 +1393,11 @@ function getFormatFieldSpans(d, xlen) {
                 { span: 5, hi: 11, lo: 7,  field: 'imm',    label: 'imm[4:1|11] [11:7]',   val: `0b${lo5}` },
                 { span: 7, hi: 6,  lo: 0,  field: 'opcode', label: 'opcode [6:0]',         val: hexOp }
             ],
-            note: `<strong>B-Type Split Branch Offset:</strong> Branches have no <code>rd</code> — bits <code>[31:25]</code> and bits <code>[11:7]</code> combine (×2) into the 13-bit signed PC offset <code>${signedImm}</code>.`
+            note: `<strong>B-type split branch offset:</strong> Branches have no <code>rd</code> — bits <code>[31:25]</code> and bits <code>[11:7]</code> combine (×2) into the 13-bit signed PC offset <code>${signedImm}</code>.`
         };
     }
 
-    if (d.fmt === 'U-Type') {
+    if (d.fmt === 'U-type') {
         const upper20 = `0x${((d.u >>> 12) & 0xfffff).toString(16)}`;
         const shifted = `0x${((d.u & 0xfffff000) >>> 0).toString(16)}`;
         return {
@@ -1388,18 +1406,18 @@ function getFormatFieldSpans(d, xlen) {
                 { span: 5,  hi: 11, lo: 7,  field: 'rd',     label: 'rd [11:7]',          val: `x${d.rd}` },
                 { span: 7,  hi: 6,  lo: 0,  field: 'opcode', label: 'opcode [6:0]',       val: hexOp }
             ],
-            note: `<strong>U-Type (20-Bit Upper Immediate):</strong> Bits <code>[31:12]</code> (<code>${upper20}</code>) place <code>${shifted}</code> in the upper 20 bits of 32-bit space and write to <code>rd (x${d.rd})</code>.`
+            note: `<strong>U-type (20-bit upper immediate):</strong> Bits <code>[31:12]</code> (<code>${upper20}</code>) place <code>${shifted}</code> in the upper 20 bits of 32-bit space and write to <code>rd (x${d.rd})</code>.`
         };
     }
 
-    if (d.fmt === 'J-Type') {
+    if (d.fmt === 'J-type') {
         return {
             spans: [
                 { span: 20, hi: 31, lo: 12, field: 'imm',    label: 'imm[20|10:1|11|19:12] [31:12]', val: signedImm },
                 { span: 5,  hi: 11, lo: 7,  field: 'rd',     label: 'rd [11:7]',                     val: `x${d.rd}` },
                 { span: 7,  hi: 6,  lo: 0,  field: 'opcode', label: 'opcode [6:0]',                  val: hexOp }
             ],
-            note: `<strong>J-Type (21-Bit Jump Offset):</strong> Bits <code>[31:12]</code> encode the PC-relative jump offset (<code>${signedImm}</code>) while saving return address <code>PC + 4</code> in <code>rd (x${d.rd})</code>.`
+            note: `<strong>J-type (21-bit jump offset):</strong> Bits <code>[31:12]</code> encode the PC-relative jump offset (<code>${signedImm}</code>) while saving return address <code>PC + 4</code> in <code>rd (x${d.rd})</code>.`
         };
     }
 
@@ -1408,7 +1426,7 @@ function getFormatFieldSpans(d, xlen) {
             { span: 25, hi: 31, lo: 7, field: 'imm',    label: 'raw [31:7]',   val: `0x${(d.u >>> 7).toString(16)}` },
             { span: 7,  hi: 6,  lo: 0, field: 'opcode', label: 'opcode [6:0]', val: hexOp }
         ],
-        note: `<strong>Custom / Unrecognized Opcode (${hexOp})</strong>`
+        note: `<strong>Custom or unrecognized opcode (${hexOp})</strong>`
     };
 }
 
@@ -1503,10 +1521,10 @@ function setupRiscvExplorer() {
         setTxt('svg-reg-title', `${rvXlen}-BIT REGS`);
         setTxt('svg-rs1-val', `rs1 (x${d.rs1}): 0x${d.r1Val.toString(16)}`);
         setTxt('svg-rs2-val', `rs2 (x${d.rs2}): 0x${d.r2Val.toString(16)}`);
-        const hasRd = d.fmt !== 'S-Type' && d.fmt !== 'B-Type';
+        const hasRd = d.fmt !== 'S-type' && d.fmt !== 'B-type';
         setTxt('svg-rd-val', hasRd ? `rd: x${d.rd}` : 'rd: — (none)');
         setTxt('svg-imm-title', `IMM SEXT-${rvXlen}`);
-        const immDisplay = d.fmt === 'U-Type'
+        const immDisplay = d.fmt === 'U-type'
             ? `0x${((d.u & 0xfffff000) >>> 0).toString(16)}`
             : `${d.immVal >= 0 ? '+' : ''}${d.immVal}`;
         setTxt('svg-imm-val', immDisplay);
