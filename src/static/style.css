@@ -233,12 +233,12 @@ code {
     padding: 1.15rem 1.25rem;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: flex-start;
 }
 
 .project-header {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
     margin-bottom: 0.55rem;
@@ -251,7 +251,13 @@ code {
 }
 
 .project-tags {
-    font-size: 0.76rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.project-tag {
+    font-size: 0.74rem;
     font-weight: 600;
     color: var(--secondary-highlight);
     background: rgba(2, 132, 199, 0.09);
@@ -266,6 +272,7 @@ code {
 }
 
 .project-links {
+    margin-top: auto;
     display: flex;
     gap: 1rem;
     font-size: 0.86rem;
