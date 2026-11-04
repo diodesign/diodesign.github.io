@@ -15,24 +15,6 @@
     <main>
         {{ body }}
     </main>
-
-    <script>
-        if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
-            let lastBuildId = null;
-            setInterval(async () => {
-                try {
-                    const res = await fetch('/__livereload', { cache: 'no-store' });
-                    if (res.ok) {
-                        const buildId = (await res.text()).trim();
-                        if (buildId && lastBuildId !== null && buildId !== lastBuildId) {
-                            location.reload();
-                        }
-                        if (buildId) lastBuildId = buildId;
-                    }
-                } catch (_) {}
-            }, 800);
-        }
-    </script>
 </body>
 
 </html>

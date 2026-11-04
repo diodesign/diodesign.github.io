@@ -100,10 +100,20 @@ code {
 .lab-header h1 {
     font-size: 3.75rem;
     font-weight: 700;
-    margin-bottom: 0.45rem;
+    margin-bottom: 0.15rem;
+    padding-bottom: 0.14em;
     letter-spacing: -2px;
-    line-height: 1.08;
+    line-height: 1.18;
     color: var(--text-color);
+    background-image:
+        radial-gradient(ellipse 58% 95% at var(--mist-x1, 28%) var(--mist-y1, 38%), rgba(37, 99, 235, 0.45) 0%, transparent 72%),
+        radial-gradient(ellipse 52% 90% at var(--mist-x2, 74%) var(--mist-y2, 62%), rgba(14, 165, 233, 0.38) 0%, transparent 70%),
+        linear-gradient(112deg, #0f172a 0%, #1e3a8a 26%, #0f172a 52%, #1d4ed8 76%, #0f172a 100%);
+    background-size: 100% 100%, 100% 100%, 240% 240%;
+    background-position: 0% 0%, 0% 0%, var(--mist-bg-x, 50%) 50%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .lab-subtitle {
@@ -146,14 +156,14 @@ code {
     width: 100%;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     gap: 1rem;
     padding: 1.15rem 1.5rem;
     background: transparent;
     border: none;
     cursor: pointer;
     font-family: 'Outfit', sans-serif;
-    text-align: left;
+    text-align: center;
     color: var(--text-color);
 }
 
@@ -168,59 +178,6 @@ code {
 .accordion-item.active .accordion-title,
 .accordion-trigger:hover .accordion-title {
     color: var(--highlight-color);
-}
-
-.accordion-summary {
-    margin-left: auto;
-    font-size: 0.9rem;
-    font-weight: 400;
-    color: var(--muted-color);
-}
-
-.accordion-icon {
-    position: relative;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: rgba(37, 99, 235, 0.08);
-    flex-shrink: 0;
-    transition: background-color 0.25s ease, transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.accordion-icon::before,
-.accordion-icon::after {
-    content: '';
-    position: absolute;
-    background: var(--highlight-color);
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    border-radius: 2px;
-    transition: transform 0.25s ease, opacity 0.25s ease;
-}
-
-.accordion-icon::before {
-    width: 10px;
-    height: 2px;
-}
-
-.accordion-icon::after {
-    width: 2px;
-    height: 10px;
-}
-
-.accordion-item.active .accordion-icon {
-    background: var(--highlight-color);
-    transform: rotate(180deg);
-}
-
-.accordion-item.active .accordion-icon::before {
-    background: #ffffff;
-}
-
-.accordion-item.active .accordion-icon::after {
-    opacity: 0;
-    transform: translate(-50%, -50%) rotate(90deg);
 }
 
 .accordion-panel {
@@ -642,11 +599,23 @@ code {
     display: flex;
     flex-direction: column;
     align-items: center;
+    position: relative;
+}
+
+.rv-bit-cell.field-start::before {
+    content: '';
+    position: absolute;
+    left: -1.5px;
+    top: 13px;
+    bottom: -4px;
+    width: 1px;
+    background: rgba(15, 23, 42, 0.22);
+    pointer-events: none;
 }
 
 .rv-bit-idx {
     font-size: 0.58rem;
-    color: #94a3b8;
+    color: #64748b;
     margin-bottom: 2px;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
@@ -662,56 +631,192 @@ code {
     font-size: 0.82rem;
     font-weight: 700;
     cursor: pointer;
-    transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+    transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease, border-color 0.15s ease;
 }
 
 .rv-bit-btn:hover {
     transform: translateY(-1px);
-    border-color: var(--highlight-color);
+    filter: brightness(0.96);
 }
 
-.rv-bit-btn.bit-one {
-    background: var(--highlight-color);
+/* Distinct semantic field color coding (0 state & 1 state) */
+.rv-bit-btn[data-field="imm"] {
+    background: #fffbeb;
+    border-color: #fcd34d;
+    border-bottom: 3px solid #d97706;
+    color: #92400e;
+}
+.rv-bit-btn.bit-one[data-field="imm"] {
+    background: #d97706;
+    border-color: #b45309;
     color: #ffffff;
-    border-color: var(--highlight-color);
 }
 
-/* Field color accents along bottom edge of bit buttons */
-.rv-bit-btn[data-field="opcode"] { border-bottom: 3px solid #1e3a8a; }
-.rv-bit-btn[data-field="rd"]     { border-bottom: 3px solid #2563eb; }
-.rv-bit-btn[data-field="funct3"] { border-bottom: 3px solid #0284c7; }
-.rv-bit-btn[data-field="rs1"]    { border-bottom: 3px solid #0ea5e9; }
-.rv-bit-btn[data-field="rs2"]    { border-bottom: 3px solid #38bdf8; }
-.rv-bit-btn[data-field="imm"],
-.rv-bit-btn[data-field="funct7"] { border-bottom: 3px solid #60a5fa; }
+.rv-bit-btn[data-field="rd"] {
+    background: #f0fdfa;
+    border-color: #5eead4;
+    border-bottom: 3px solid #0d9488;
+    color: #115e59;
+}
+.rv-bit-btn.bit-one[data-field="rd"] {
+    background: #0d9488;
+    border-color: #0f766e;
+    color: #ffffff;
+}
 
+.rv-bit-btn[data-field="rs1"] {
+    background: #eff6ff;
+    border-color: #93c5fd;
+    border-bottom: 3px solid #2563eb;
+    color: #1e40af;
+}
+.rv-bit-btn.bit-one[data-field="rs1"] {
+    background: #2563eb;
+    border-color: #1d4ed8;
+    color: #ffffff;
+}
+
+.rv-bit-btn[data-field="rs2"] {
+    background: #eef2ff;
+    border-color: #a5b4fc;
+    border-bottom: 3px solid #4f46e5;
+    color: #3730a3;
+}
+.rv-bit-btn.bit-one[data-field="rs2"] {
+    background: #4f46e5;
+    border-color: #4338ca;
+    color: #ffffff;
+}
+
+.rv-bit-btn[data-field="funct3"],
+.rv-bit-btn[data-field="funct7"] {
+    background: #f0f9ff;
+    border-color: #7dd3fc;
+    border-bottom: 3px solid #0284c7;
+    color: #075985;
+}
+.rv-bit-btn.bit-one[data-field="funct3"],
+.rv-bit-btn.bit-one[data-field="funct7"] {
+    background: #0284c7;
+    border-color: #0369a1;
+    color: #ffffff;
+}
+
+.rv-bit-btn[data-field="opcode"] {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+    border-bottom: 3px solid #334155;
+    color: #1e293b;
+}
+.rv-bit-btn.bit-one[data-field="opcode"] {
+    background: #334155;
+    border-color: #1e293b;
+    color: #ffffff;
+}
+
+/* Format-Aligned Bit-Field Span Track & Explanation */
 .rv-field-legend {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-top: 0.6rem;
-    padding-top: 0.5rem;
-    border-top: 1px solid rgba(15, 23, 42, 0.06);
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    font-size: 0.76rem;
+    margin-top: 4px;
+    min-width: 700px;
 }
 
-.rv-field-chip {
-    display: inline-flex;
+.rv-span-grid {
+    display: grid;
+    grid-template-columns: repeat(32, minmax(21px, 1fr));
+    gap: 2px;
+    min-width: 700px;
+}
+
+.rv-span-box {
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 0.35rem;
-    padding: 2px 8px;
+    justify-content: center;
+    padding: 3px 4px;
     border-radius: 6px;
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    border-top-width: 3px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    text-align: center;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.rv-span-name {
+    font-size: 0.63rem;
+    font-weight: 600;
+    opacity: 0.88;
+    line-height: 1.15;
+}
+
+.rv-span-val {
+    font-size: 0.74rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.rv-span-box[data-field="imm"] {
+    background: #fffbeb;
+    border-color: #fcd34d;
+    border-top-color: #d97706;
+    color: #92400e;
+}
+
+.rv-span-box[data-field="rd"] {
+    background: #f0fdfa;
+    border-color: #5eead4;
+    border-top-color: #0d9488;
+    color: #115e59;
+}
+
+.rv-span-box[data-field="rs1"] {
+    background: #eff6ff;
+    border-color: #93c5fd;
+    border-top-color: #2563eb;
+    color: #1e40af;
+}
+
+.rv-span-box[data-field="rs2"] {
+    background: #eef2ff;
+    border-color: #a5b4fc;
+    border-top-color: #4f46e5;
+    color: #3730a3;
+}
+
+.rv-span-box[data-field="funct3"],
+.rv-span-box[data-field="funct7"] {
+    background: #f0f9ff;
+    border-color: #7dd3fc;
+    border-top-color: #0284c7;
+    color: #075985;
+}
+
+.rv-span-box[data-field="opcode"] {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+    border-top-color: #334155;
+    color: #1e293b;
+}
+
+.rv-format-note {
+    margin-top: 0.5rem;
+    padding: 0.4rem 0.65rem;
+    border-radius: 8px;
     background: #ffffff;
     border: 1px solid rgba(15, 23, 42, 0.08);
+    font-size: 0.78rem;
+    color: #334155;
+    line-height: 1.4;
 }
 
-.rv-field-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
+.rv-format-note code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: rgba(15, 23, 42, 0.05);
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: #0f172a;
 }
 
 /* Datapath SVG Card */

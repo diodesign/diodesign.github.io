@@ -6,11 +6,11 @@ This repository contains the source and zero-dependency Python static build scri
 
 ```text
 .
-├── build.py                 # Zero-dependency static site builder & live-reload dev server
+├── build.py                 # Zero-dependency static site builder & local dev server
 ├── requirements.txt         # Empty (uses Python 3 standard library only)
 ├── src/
 │   ├── templates/
-│   │   ├── base.html        # Root HTML shell and live-reload client script
+│   │   ├── base.html        # Root HTML shell
 │   │   └── index.html       # Single-page program portal (About, Projects, Updates, Contact)
 │   └── static/
 │       ├── CNAME            # Custom domain configuration (diodesign.org)
@@ -27,7 +27,7 @@ This repository contains the source and zero-dependency Python static build scri
 - **[`src/static/`](src/static/)**: Static assets copied directly to the root of `_site/` during the build.
   - **[`splash.js`](src/static/splash.js)**: Controls the single-open accordion and renders the procedural alpine & fjord landscape background on desktop/tablet screens (automatically bypassed on screens `<= 768px`).
   - **[`style.css`](src/static/style.css)**: Responsive layout and typography rules.
-- **[`build.py`](build.py)**: Compiles the templates, copies static assets into `_site/`, generates `sitemap.xml` and `llms.txt`, and provides a multi-threaded local development server with automatic browser live-reload.
+- **[`build.py`](build.py)**: Compiles the templates, copies static assets into `_site/`, generates `sitemap.xml` and `llms.txt`, and provides a local development server that rebuilds `_site/` automatically when source files are saved.
 
 ## Requirements
 
@@ -41,18 +41,25 @@ This repository contains the source and zero-dependency Python static build scri
    python3 build.py
    ```
 
-2. **Run the local development server** with automatic rebuild and live browser reload:
+2. **Run the local development server** with automatic rebuild on save:
 
    ```bash
    python3 build.py --server
    ```
 
-   Then visit [http://localhost:8000](http://localhost:8000). Any edits to files in `src/` or `build.py` automatically rebuild `_site/` and refresh connected browsers.
+   Then visit [http://localhost:8000](http://localhost:8000). Any edits to files in `src/` or `build.py` automatically rebuild `_site/` so you can simply refresh your browser.
 
 3. **Clean generated build output**:
 
    ```bash
    python3 build.py --clear
+   ```
+
+4. **Run the automated RISC-V instruction and decoder verification suite** (verifies RV32I/RV64I assembly, 32-bit hex encodings, individual bit-fields `[31:0]`, and round-trip disassembly against `llvm-mc`; add `-v` or `--verbose` to print a full table of all 789 test vectors and their decoded webpage values):
+
+   ```bash
+   python3 build.py --test
+   python3 build.py --test --verbose
    ```
 
 ## CI/CD Deployment
@@ -64,4 +71,4 @@ The GitHub Actions workflow in [`.github/workflows/deploy.yml`](.github/workflow
 
 ---
 
-Copyright &copy; 2026 Chris Williams.
+See LICENSE for copyright, usage, and distribution rights.

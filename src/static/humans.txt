@@ -1,4 +1,5 @@
 $ cat humans.txt
+
             _ _           _           _             
          __| (_) ___   __| | ___  ___(_) __ _ _ __  
         / _` | |/ _ \ / _` |/ _ \/ __| |/ _` | '_ \ 
@@ -8,12 +9,12 @@ $ cat humans.txt
        
        >> Credits << chrisw (code, content)
 
-       >> Hellos << soph, gerph, spanners, thalia, aardvark, lla,
+       >> Hellos << soph, gerph, spanners, thalia, lla, sarah,
            El Reg, iX, SFO-SPE, D&E, J&O,
-               imj, the old country, all decent SF bars...
+                aardvark, the old country, all decent SF bars...
  
 
 
             t h e   d i o d e s i g n   p r o g r a m 
-    >> They stole our humanness. Now we're stealing it back. <<
+    >> They stole our humanity. Now we're stealing it back. <<
                     Wear sunscreen.
