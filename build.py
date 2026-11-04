@@ -1,584 +1,507 @@
+import argparse
+from datetime import datetime, timezone
+import http.server
+import json
 import os
-import math
-import sys
-import subprocess
+import re
 import shutil
+import socketserver
+import subprocess
+import sys
+import threading
 import time
 
-# Auto-setup: Ensure dependencies are installed
-def setup_dependencies():
-    deps = {
-        'yaml': 'PyYAML',
-        'frontmatter': 'python-frontmatter',
-        'markdown': 'markdown'
-    }
-    for module, package in deps.items():
-        try:
-            __import__(module)
-        except ImportError:
-            print(f"{package} not found. Attempting to install...")
-            try:
-                subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-                print(f"Successfully installed {package}.")
-            except Exception as e:
-                print(f"Error: Could not install {package}. Please run 'pip install {package}' manually.")
-                sys.exit(1)
-
-setup_dependencies()
-import yaml
-import frontmatter
-import markdown
-import http.server
-import socketserver
-import datetime
-import email.utils
-from xml.sax.saxutils import escape
-
-class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
-    """Custom handler to disable browser caching during development."""
-    def end_headers(self):
-        self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
-        self.send_header('Pragma', 'no-cache')
-        self.send_header('Expires', '0')
-        super().end_headers()
-
 # Configuration
-DATA_DIR = 'src/data'
-TEMPLATE_DIR = 'src/templates'
+TEMPLATES_DIR = 'src/templates'
+STATIC_DIR = 'src/static'
 OUTPUT_DIR = '_site'
-LOG_ENTRIES_PER_PAGE = 5
+BASE_URL = 'https://diodesign.org'
+PORT = 8000
 
-# Global context for templates
-LATEST_LOG_CONTEXT = {
-    'latest_url': '#',
-    'latest_title': 'None'
-}
+SERVER_STOPPING = False
 
-def load_data(filename):
-    """Loads YAML data from the data directory."""
-    path = os.path.join(DATA_DIR, filename)
-    with open(path, 'r') as f:
-        return yaml.safe_load(f)
 
-def load_markdown(filename):
-    """Loads Markdown with frontmatter, returning metadata and rendered HTML content."""
-    path = os.path.join(DATA_DIR, filename)
-    with open(path, 'r') as f:
-        post = frontmatter.load(f)
-        metadata = post.metadata
-        metadata['content'] = markdown.markdown(post.content, extensions=['tables'])
-        return metadata
+def load_template(name):
+    """Loads an HTML template from src/templates/."""
+    path = os.path.join(TEMPLATES_DIR, name)
+    with open(path, 'r', encoding='utf-8') as f:
+        return f.read()
 
-# Template cache — populated on first access, cleared at the start of each build
-TEMPLATE_CACHE = {}
 
-def load_template(filename):
-    if filename not in TEMPLATE_CACHE:
-        with open(os.path.join(TEMPLATE_DIR, filename), 'r') as f:
-            TEMPLATE_CACHE[filename] = f.read()
-    return TEMPLATE_CACHE[filename]
+def render_template(template_content, context):
+    """Replaces {{ key }} placeholders using a dictionary context."""
+    def replace_match(match):
+        key = match.group(1).strip()
+        return str(context.get(key, ''))
 
-def render_template(template, context):
-    rendered = template
-    for key, value in context.items():
-        placeholder = '{{ ' + key + ' }}'
-        rendered = rendered.replace(placeholder, str(value))
-    return rendered
+    return re.sub(r'\{\{\s*(.*?)\s*\}\}', replace_match, template_content)
 
-def build_page(template_name, context, output_path):
-    """
-    Builds a page from a template and context.
-    output_path is relative to the root, e.g., 'about/index.html'
-    """
-    base_template = load_template('base.html')
-    page_template = load_template(template_name)
-    
-    page_body = render_template(page_template, context)
-    
-    final_context = {
-        'title': context.get('page_title', 'diodesign'),
-        'body': page_body
-    }
-    final_context.update(LATEST_LOG_CONTEXT)
-    
-    final_html = render_template(base_template, final_context)
-    
-    # Ensure directory exists
-    full_output_path = os.path.join(OUTPUT_DIR, output_path)
-    os.makedirs(os.path.dirname(full_output_path), exist_ok=True)
-    
-    with open(full_output_path, 'w') as f:
-        f.write(final_html)
-    print(f"Built {output_path}")
-
-def build_log_pages(data_subdir, title, subtitle, folder_name):
-    """
-    Builds log pages from a directory of Markdown files.
-    """
-    entries = []
-    log_dir = os.path.join(DATA_DIR, data_subdir)
-    
-    if os.path.exists(log_dir) and os.path.isdir(log_dir):
-        for filename in os.listdir(log_dir):
-            if filename.endswith('.md'):
-                path = os.path.join(log_dir, filename)
-                with open(path, 'r') as f:
-                    post = frontmatter.load(f)
-                    entry = post.metadata
-                    entry['content'] = markdown.markdown(post.content)
-                    # Fallback for permalink if not in frontmatter
-                    if 'permalink' not in entry:
-                        entry['permalink'] = filename.replace('.md', '.html')
-                    entry['folder'] = folder_name
-                    entries.append(entry)
-
-    # Sort entries by date (descending)
-    entries.sort(key=lambda x: str(x.get('date', '')), reverse=True)
-    
-    # Build individual entry pages
-    for entry in entries:
-        entry_context = {
-            'page_title': entry.get('title', 'Untitled'),
-            'entry_title': entry.get('title', 'Untitled'),
-            'entry_date': entry.get('date', ''),
-            'entry_byline': entry.get('byline', ''),
-            'entry_content': entry['content']
-        }
-        build_page('single_entry.html', entry_context, os.path.join(folder_name, entry['permalink']))
-
-    # Build list pages
-    total_pages = math.ceil(len(entries) / LOG_ENTRIES_PER_PAGE)
-    if total_pages == 0: total_pages = 1
-    
-    for page_num in range(1, total_pages + 1):
-        start_idx = (page_num - 1) * LOG_ENTRIES_PER_PAGE
-        end_idx = start_idx + LOG_ENTRIES_PER_PAGE
-        page_entries = entries[start_idx:end_idx]
-        
-        entry_template = load_template('log_entry.html')
-        entries_html = ""
-        for entry in page_entries:
-            entries_html += render_template(entry_template, entry)
-            
-        pagination_html = ""
-        if total_pages > 1:
-            page_links = []
-            if page_num > 1:
-                prev_link = "index.html" if page_num == 2 else f"p{page_num-1}.html"
-                page_links.append(f'<a href="{prev_link}" class="page-link">&larr; Newer</a>')
-            
-            if page_num < total_pages:
-                next_link = f"p{page_num+1}.html"
-                page_links.append(f'<a href="{next_link}" class="page-link">Older &rarr;</a>')
-            
-            pagination_html = ' <span class="separator">|</span> '.join(page_links)
-        
-        context = {
-            'page_title': title,
-            'log_title': title,
-            'log_subtitle': subtitle,
-            'log_entries': entries_html,
-            'pagination': pagination_html
-        }
-        
-        output_name = "index.html" if page_num == 1 else f"p{page_num}.html"
-        build_page('log.html', context, os.path.join(folder_name, output_name))
-    
-    return entries
-
-def generate_rss(entries):
-    """Generates an RSS 2.0 feed from the given entries."""
-    base_url = "https://diodesign.org"
-    rss_items = []
-    
-    # Sort all entries by date descending for the feed
-    sorted_entries = sorted(entries, key=lambda x: str(x.get('date', '')), reverse=True)
-    
-    for entry in sorted_entries:
-        title = escape(entry.get('title', 'Untitled'))
-        link = f"{base_url}/{entry['folder']}/{entry['permalink']}"
-        date_str = str(entry.get('date', ''))
-        
-        try:
-            dt = datetime.datetime.strptime(date_str, "%Y-%m-%d")
-            # Set to noon to avoid timezone ambiguity in a simple way for daily logs
-            dt = dt.replace(hour=12, minute=0, second=0)
-            pub_date = email.utils.format_datetime(dt)
-        except ValueError:
-            pub_date = date_str
-
-        # Use summary if available, otherwise fallback to full content
-        description_text = entry.get('summary') or entry.get('content', '')
-        description = escape(description_text)
-        
-        item = f"""    <item>
-      <title>{title}</title>
-      <link>{link}</link>
-      <guid isPermaLink="true">{link}</guid>
-      <pubDate>{pub_date}</pubDate>
-      <description>{description}</description>
-    </item>"""
-        rss_items.append(item)
-
-    now = email.utils.format_datetime(datetime.datetime.now())
-    
-    rss_template = f"""<?xml version="1.0" encoding="UTF-8" ?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
-<channel>
-  <title>diodesign</title>
-  <link>{base_url}</link>
-  <description>Technical logs and musings from diodesign.org</description>
-  <language>en-us</language>
-  <lastBuildDate>{now}</lastBuildDate>
-  <atom:link href="{base_url}/rss.xml" rel="self" type="application/rss+xml" />
-  {"\n".join(rss_items)}
-</channel>
-</rss>"""
-
-    rss_path = os.path.join(OUTPUT_DIR, 'rss.xml')
-    with open(rss_path, 'w') as f:
-        f.write(rss_template)
-    print(f"Built rss.xml")
 
 def prepare_output_directory():
-    """Removes old generated files and directories to ensure a clean build."""
-    if os.path.exists(OUTPUT_DIR):
-        print(f"Cleaning {OUTPUT_DIR}/...")
-        shutil.rmtree(OUTPUT_DIR)
+    """Clears old generated files inside _site/ while preserving the root directory inode."""
     os.makedirs(OUTPUT_DIR, exist_ok=True)
+    print(f"Cleaning {OUTPUT_DIR}/...")
+    for item in os.listdir(OUTPUT_DIR):
+        item_path = os.path.join(OUTPUT_DIR, item)
+        try:
+            if os.path.isdir(item_path):
+                shutil.rmtree(item_path)
+            else:
+                os.remove(item_path)
+        except OSError:
+            pass
+
+
+def generate_sitemap():
+    """Generates a clean sitemap.xml for the single-page site."""
+    today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        '  <url>\n'
+        f'    <loc>{BASE_URL}/</loc>\n'
+        f'    <lastmod>{today}</lastmod>\n'
+        '    <priority>1.0</priority>\n'
+        '  </url>\n'
+        '</urlset>\n'
+    )
+    with open(os.path.join(OUTPUT_DIR, 'sitemap.xml'), 'w', encoding='utf-8') as f:
+        f.write(xml)
+    print("Built sitemap.xml")
+
+
+def generate_llms_txt():
+    """Generates a concise llms.txt describing the program and its projects."""
+    content = (
+        "# the diodesign program\n\n"
+        "> Blending systems engineering, AI, and human craft at the foundation of computing.\n\n"
+        "The diodesign program is an independent endeavor run by Chris Williams exploring how artificial intelligence and human engineering can work together to innovate at the very base of the computing stack: firmware, hypervisors, operating systems, and chip design.\n\n"
+        "## Projects\n\n"
+        "- [Diosix](https://diosix.org/): An open-source bare-metal multiprocessor hypervisor written in Zig for 64-bit RISC-V systems.\n"
+        "- [Diosix skills](https://github.com/diodesign/diosix-agent-skills): Agent skills for creating, maintaining, and reviewing idiomatic Diosix source code.\n\n"
+        "## Contact\n\n"
+        "- Email: chrisw@diosix.org\n"
+        "- GitHub: https://github.com/diodesign\n"
+        "- LinkedIn: https://www.linkedin.com/in/diodesign/\n"
+        "- Bluesky: https://bsky.app/profile/diodesign.org\n"
+        "- Keybase: https://keybase.io/diodesign\n"
+    )
+    with open(os.path.join(OUTPUT_DIR, 'llms.txt'), 'w', encoding='utf-8') as f:
+        f.write(content)
+    print("Built llms.txt")
+
+
+def get_last_updated_date():
+    """Returns the last commit date (or latest local source mtime if dirty) formatted as 'Mmm DD, YYYY'."""
+    try:
+        status = subprocess.run(
+            ['git', 'status', '--porcelain', 'src', 'build.py'],
+            capture_output=True, text=True, check=True
+        ).stdout.strip()
+        if status:
+            mtimes = get_file_mtimes()
+            if mtimes:
+                dt = datetime.fromtimestamp(max(mtimes.values()))
+                return dt.strftime('%b %d, %Y')
+        commit_ts = subprocess.run(
+            ['git', 'log', '-1', '--format=%ct'],
+            capture_output=True, text=True, check=True
+        ).stdout.strip()
+        if commit_ts:
+            dt = datetime.fromtimestamp(int(commit_ts), tz=timezone.utc)
+            return dt.strftime('%b %d, %Y')
+    except Exception:
+        pass
+    return datetime.now(timezone.utc).strftime('%b %d, %Y')
+
+
+def build_site():
+    """Builds the complete single-page site into _site/."""
+    prepare_output_directory()
+
+    base_html = load_template('base.html')
+    index_body = render_template(load_template('index.html'), {
+        'last_updated': get_last_updated_date()
+    })
+    full_html = render_template(base_html, {
+        'title': 'the diodesign program',
+        'body_class': 'home-page',
+        'body': index_body
+    })
+
+    with open(os.path.join(OUTPUT_DIR, 'index.html'), 'w', encoding='utf-8') as f:
+        f.write(full_html)
+    print("Built index.html")
+
+    if os.path.exists(STATIC_DIR):
+        for item in os.listdir(STATIC_DIR):
+            s = os.path.join(STATIC_DIR, item)
+            d = os.path.join(OUTPUT_DIR, item)
+            if os.path.isdir(s):
+                shutil.copytree(s, d, dirs_exist_ok=True)
+            else:
+                shutil.copy2(s, d)
+        print(f"Copied static assets from {STATIC_DIR} to {OUTPUT_DIR}")
+
+    generate_sitemap()
+    generate_llms_txt()
+
 
 def get_file_mtimes():
-    """Returns a dict of filepath to mtime for all source files being watched."""
+    """Returns a dict of filepath -> mtime for all watched source files."""
     mtimes = {}
-    # Watch the src directory recursively
     if os.path.exists('src'):
-        for root, dirs, files in os.walk('src'):
+        for root, _, files in os.walk('src'):
             for f in files:
                 path = os.path.join(root, f)
                 try:
                     mtimes[path] = os.path.getmtime(path)
                 except OSError:
                     pass
-    
-    # Also watch specific root files that affect the build or appearance
-    root_watches = ['build.py', 'style.css', 'splash.js', 'search.js', 'characters.js']
-    for f in root_watches:
-        if os.path.exists(f):
-            try:
-                mtimes[f] = os.path.getmtime(f)
-            except OSError:
-                pass
+    if os.path.exists('build.py'):
+        try:
+            mtimes['build.py'] = os.path.getmtime('build.py')
+        except OSError:
+            pass
     return mtimes
 
-def get_latest_log_entry():
-    """Finds the most recent log entry across all log directories."""
-    entries = []
-    for log_dir, folder_name in [('work-log', 'work-log'), ('life-log', 'life-log')]:
-        path = os.path.join(DATA_DIR, log_dir)
-        if os.path.exists(path) and os.path.isdir(path):
-            for filename in os.listdir(path):
-                if filename.endswith('.md'):
-                    with open(os.path.join(path, filename), 'r') as f:
-                        post = frontmatter.load(f)
-                        entry = post.metadata
-                        if 'permalink' not in entry:
-                            entry['permalink'] = filename.replace('.md', '.html')
-                        entry['folder'] = folder_name
-                        entries.append(entry)
-    
-    if not entries:
-        return None
-        
-    entries.sort(key=lambda x: str(x.get('date', '')), reverse=True)
-    return entries[0]
 
-def build_site():
-    """Performs the complete site build."""
-    # Clear template cache so stale templates aren't used across rebuilds
-    TEMPLATE_CACHE.clear()
+class DevServerHandler(http.server.SimpleHTTPRequestHandler):
+    """HTTP handler serving _site/ with no-cache headers."""
 
-    # Prepare for a fresh build
-    prepare_output_directory()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, directory=OUTPUT_DIR, **kwargs)
 
-    # Populate latest log context for footer
-    global LATEST_LOG_CONTEXT
-    latest = get_latest_log_entry()
-    if latest:
-        LATEST_LOG_CONTEXT = {
-            'latest_url': f"/{latest['folder']}/{latest['permalink']}",
-            'latest_title': latest.get('title', 'Untitled')
-        }
+    def log_message(self, format, *args):
+        pass
 
-    # Build splash page
-    build_page('index.html', {'page_title': 'Home'}, 'index.html')
-    
-    # Build about page
-    about_data = load_markdown('about.md')
-    build_page('page.html', {
-        'page_title': about_data['title'],
-        'page_subtitle': about_data['subtitle'],
-        'page_content': about_data['content']
-    }, 'about/index.html')
-    
-    # Build contact page
-    contact_data = load_markdown('contact.md')
-    build_page('page.html', {
-        'page_title': contact_data['title'],
-        'page_subtitle': contact_data['subtitle'],
-        'page_content': contact_data['content']
-    }, 'contact/index.html')
-    
-    # Build logs
-    all_entries = []
-    all_entries.extend(build_log_pages('work-log', 'Work log', 'Debugging the universe, one line at a time', 'work-log'))
-    all_entries.extend(build_log_pages('life-log', 'Life log', 'Mostly harmless', 'life-log'))
-
-    # Generate RSS feed
-    generate_rss(all_entries)
-
-    # Build legal and contributor pages
-    contrib_data = load_markdown('contributors.md')
-    build_page('page.html', {
-        'page_title': contrib_data['title'],
-        'page_subtitle': contrib_data['subtitle'],
-        'page_content': contrib_data['content']
-    }, 'contributors/index.html')
-
-    license_data = load_markdown('license.md')
-    build_page('page.html', {
-        'page_title': license_data['title'],
-        'page_subtitle': license_data['subtitle'],
-        'page_content': license_data['content']
-    }, 'license/index.html')
-
-    privacy_data = load_markdown('privacy.md')
-    build_page('page.html', {
-        'page_title': privacy_data['title'],
-        'page_subtitle': privacy_data['subtitle'],
-        'page_content': privacy_data['content']
-    }, 'privacy/index.html')
-
-    # Copy static assets
-    static_assets = ['style.css', 'splash.js', 'characters.js', 'search.js', 'favicon.ico', 'CNAME', 'keybase.txt']
-    for asset in static_assets:
-        if os.path.exists(asset):
-            shutil.copy2(asset, os.path.join(OUTPUT_DIR, asset))
-            print(f"Copied {asset} to {OUTPUT_DIR}")
-
-    # Build search index for AI
-    build_search_index()
-
-def clean_markdown(text):
-    """Strips markdown and HTML syntax, leaving plain searchable prose."""
-    import re
-    # Remove fenced code blocks
-    text = re.sub(r'```[\s\S]*?```', '', text)
-    text = re.sub(r'`[^`]+`', '', text)
-    # Collapse inline links to their label text
-    text = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', text)
-    # Strip HTML tags
-    text = re.sub(r'<[^>]+>', '', text)
-    # Strip markdown syntax characters
-    text = re.sub(r'[*#_>~]', '', text)
-    # Normalise whitespace
-    text = re.sub(r'\n{3,}', '\n\n', text)
-    return text.strip()
+    def end_headers(self):
+        self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+        self.send_header('Pragma', 'no-cache')
+        self.send_header('Expires', '0')
+        super().end_headers()
 
 
-def chunk_text(text, title='', date='', max_chars=4500):
-    """
-    Paragraph-boundary chunking.
-
-    Splits on blank lines so individual paragraphs are never severed.
-    Each chunk is prefixed with the entry title and date so that the LLM
-    always knows the source context even when reading a mid-article chunk.
-    """
-    header = f"{title}" + (f" ({date})" if date else '') + "\n\n" if title else ''
-    header_len = len(header)
-
-    paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
-
-    chunks = []
-    current_paras = []
-    current_len = header_len
-
-    for para in paragraphs:
-        para_len = len(para) + 2  # +2 for the separating newlines
-        if current_len + para_len > max_chars and current_paras:
-            chunks.append(header + '\n\n'.join(current_paras))
-            current_paras = []
-            current_len = header_len
-        current_paras.append(para)
-        current_len += para_len
-
-    if current_paras:
-        chunks.append(header + '\n\n'.join(current_paras))
-
-    return chunks if chunks else [header.strip()]
+class ThreadingDevServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    allow_reuse_address = True
+    daemon_threads = True
 
 
-def build_search_index():
-    """Generates a search-index.json for client-side RAG + AI context."""
-    import json
-
-    index = []
-
-    def add_to_index(title, url, raw_content, date=''):
-        cleaned = clean_markdown(raw_content)
-        for i, chunk in enumerate(chunk_text(cleaned, title=title, date=date)):
-            index.append({
-                'title': title,
-                'url':   url,
-                'content': chunk,
-                'chunk': i,
-            })
-
-    # Process regular pages
-    pages = ['about.md', 'contact.md', 'contributors.md', 'license.md', 'privacy.md']
-    for page_file in pages:
-        path = os.path.join(DATA_DIR, page_file)
-        if os.path.exists(path):
-            with open(path, 'r') as f:
-                post = frontmatter.load(f)
-                name    = page_file.replace('.md', '')
-                title   = post.metadata.get('title', name.capitalize())
-                summary = post.metadata.get('summary', '')
-                # Prepend the summary so it is always present in the first chunk
-                full_content = (f"{summary}\n\n" if summary else '') + post.content
-                add_to_index(title, f'/{name}/', full_content)
-
-    # Process logs
-    for log_dir, folder in [('work-log', 'work-log'), ('life-log', 'life-log')]:
-        full_log_dir = os.path.join(DATA_DIR, log_dir)
-        if os.path.exists(full_log_dir):
-            for filename in sorted(os.listdir(full_log_dir)):
-                if not filename.endswith('.md'):
-                    continue
-                with open(os.path.join(full_log_dir, filename), 'r') as f:
-                    post      = frontmatter.load(f)
-                    permalink = post.metadata.get('permalink', filename.replace('.md', '.html'))
-                    title     = post.metadata.get('title', 'Untitled')
-                    byline    = post.metadata.get('byline', '')
-                    summary   = post.metadata.get('summary', '')
-                    date      = str(post.metadata.get('date', ''))
-                    # Lead with byline + summary for the first chunk
-                    preamble  = '\n'.join(filter(None, [byline, summary]))
-                    full_content = (preamble + '\n\n' if preamble else '') + post.content
-                    add_to_index(
-                        title,
-                        f'/{folder}/{permalink}',
-                        full_content,
-                        date=date,
-                    )
-
-    index_path = os.path.join(OUTPUT_DIR, 'search-index.json')
-    with open(index_path, 'w') as f:
-        json.dump(index, f, separators=(',', ':'))
-    print(f"Built search-index.json with {len(index)} chunks")
-
-def main():
-    # Handle internal server flag used for development
-    if len(sys.argv) > 1 and sys.argv[1] == '--internal-server':
-        port = 8000
-        print(f"Starting internal dev server on port {port} (cache disabled)...")
-        
-        # Aggressively clear the port if it's already in use
-        try:
-            subprocess.run(['fuser', '-k', f'{port}/tcp'], capture_output=True)
-            time.sleep(0.5) # Give the OS a moment to release the socket
-        except:
-            pass
-
-        socketserver.TCPServer.allow_reuse_address = True
-        import functools
-        handler = functools.partial(NoCacheHandler, directory=OUTPUT_DIR)
-        
-        # Retry logic for binding to the port
-        retries = 10
-        while retries > 0:
-            try:
-                with socketserver.TCPServer(("", port), handler) as httpd:
-                    httpd.serve_forever()
-                return # Normal exit
-            except OSError as e:
-                if e.errno == 98: # Address already in use
-                    print(f"Port {port} is in use, retrying in 1s... ({retries} attempts left)")
-                    try:
-                        subprocess.run(['fuser', '-k', f'{port}/tcp'], capture_output=True)
-                    except:
-                        pass
-                    time.sleep(1)
-                    retries -= 1
-                else:
-                    raise e
-        
-        print(f"FATAL: Could not bind to port {port} after multiple attempts.")
-        sys.exit(1)
-
-    # Handle standalone --clear flag
-    if len(sys.argv) > 1 and sys.argv[1] == '--clear':
-        prepare_output_directory()
-        print("Generated files cleared.")
-        return
-
+def run_server():
+    """Runs the persistent development server and rebuilds on file changes."""
+    global SERVER_STOPPING
     build_site()
 
-    # Start server if requested
-    if '--server' in sys.argv:
-        print("\nBuild successful. Starting server on port 8000...")
-        # Use our own script to run the internal server with cache disabled
-        server_process = subprocess.Popen([sys.executable, sys.argv[0], "--internal-server"])
-        
-        last_mtimes = get_file_mtimes()
-        
-        try:
-            while True:
-                time.sleep(0.5) # snappier polling
-                current_mtimes = get_file_mtimes()
-                
-                changed = False
-                for path, mtime in current_mtimes.items():
-                    if path not in last_mtimes or mtime > last_mtimes[path]:
-                        changed = True
-                        print(f"\nFile changed: {path}")
-                        
-                        # If build.py itself changed, restart the whole script
-                        if os.path.basename(path) == 'build.py':
-                            print("build.py changed. Restarting script...")
-                            server_process.terminate()
-                            server_process.wait()
-                            os.execv(sys.executable, [sys.executable] + sys.argv)
-                        
-                        break
-                        
-                if not changed:
-                    for path in last_mtimes:
-                        if path not in current_mtimes:
-                            changed = True
-                            print(f"\nFile deleted: {path}")
-                            break
-                            
-                if changed:
-                    print("Killing server...")
-                    server_process.terminate()
-                    server_process.wait()
-                    
-                    print("Rebuilding site...")
-                    try:
-                        build_site()
-                        print("Build successful.")
-                    except Exception as e:
-                        print(f"Build failed: {e}")
-                    
-                    print("Restarting server on port 8000...")
-                    server_process = subprocess.Popen([sys.executable, sys.argv[0], "--internal-server"])
-                    
-                    last_mtimes = get_file_mtimes()
-                    
-        except KeyboardInterrupt:
-            print("\nServer stopped.")
-            server_process.terminate()
-            server_process.wait()
+    print(f"\nStarting development server on port {PORT}...")
+    httpd = ThreadingDevServer(("", PORT), DevServerHandler)
+    server_thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+    server_thread.start()
+    print(f"Dev server running at: http://localhost:{PORT}/ (cache disabled, auto-rebuild on save)")
+
+    last_mtimes = get_file_mtimes()
+    try:
+        while True:
+            time.sleep(0.4)
+            current_mtimes = get_file_mtimes()
+            if current_mtimes != last_mtimes:
+                print("\nChange detected! Rebuilding site...")
+                try:
+                    subprocess.run([sys.executable, 'build.py'], check=True)
+                    print("Rebuild complete.")
+                except Exception as e:
+                    print(f"Error during build: {e}")
+                last_mtimes = get_file_mtimes()
+    except KeyboardInterrupt:
+        print("\nStopping development server...")
+        SERVER_STOPPING = True
+        httpd.shutdown()
+        httpd.server_close()
+
+
+def run_tests(verbose=False):
+    """Verifies RV32I/RV64I assembly, 32-bit hex encodings, bit-fields, and disassembly against llvm-mc."""
+    r_ops_base = ['add', 'sub', 'sll', 'slt', 'sltu', 'xor', 'srl', 'sra', 'or', 'and']
+    r_ops_64 = ['addw', 'subw', 'sllw', 'srlw', 'sraw']
+    i_ops_base = ['addi', 'slti', 'sltiu', 'xori', 'ori', 'andi', 'slli', 'srli', 'srai']
+    i_ops_64 = ['addiw', 'slliw', 'srliw', 'sraiw']
+    loads_base = ['lb', 'lh', 'lw', 'lbu', 'lhu']
+    loads_64 = ['lwu', 'ld']
+    stores_base = ['sb', 'sh', 'sw']
+    stores_64 = ['sd']
+    branches = ['beq', 'bne', 'blt', 'bge', 'bltu', 'bgeu']
+    u_ops = ['lui', 'auipc']
+
+    regs = ['x0', 'x1', 'x2']
+    imms_signed = [-1, 0, 1]
+    imms_unsigned = [0, 1]
+    branch_imms = [-2, 0, 2, 4]
+
+    test_cases = []
+    # 1. R-Type (RV32I & RV64I)
+    for m in r_ops_base + r_ops_64:
+        xlen = 64 if m in r_ops_64 else 32
+        for rd in ['x1', 'x2']:
+            for rs1 in ['x1', 'x2']:
+                for rs2 in regs:
+                    test_cases.append({'asm': f"{m} {rd}, {rs1}, {rs2}", 'xlen': xlen})
+
+    # 2. I-Type ALU (RV32I & RV64I)
+    shift_ops = {'slli', 'srli', 'srai', 'slliw', 'srliw', 'sraiw'}
+    for m in i_ops_base + i_ops_64:
+        xlen = 64 if m in i_ops_64 else 32
+        imm_list = imms_unsigned if m in shift_ops else imms_signed
+        for rd in ['x1', 'x2']:
+            for rs1 in regs:
+                for imm in imm_list:
+                    test_cases.append({'asm': f"{m} {rd}, {rs1}, {imm}", 'xlen': xlen})
+
+    # 3. Loads & JALR
+    for m in loads_base + loads_64 + ['jalr']:
+        xlen = 64 if m in loads_64 else 32
+        for rd in ['x1', 'x2']:
+            for rs1 in ['x1', 'x2']:
+                for imm in imms_signed:
+                    test_cases.append({'asm': f"{m} {rd}, {imm}({rs1})", 'xlen': xlen})
+
+    # 4. Stores
+    for m in stores_base + stores_64:
+        xlen = 64 if m in stores_64 else 32
+        for rs2 in regs:
+            for rs1 in ['x1', 'x2']:
+                for imm in imms_signed:
+                    test_cases.append({'asm': f"{m} {rs2}, {imm}({rs1})", 'xlen': xlen})
+
+    # 5. Branches
+    for m in branches:
+        for rs1 in ['x1', 'x2']:
+            for rs2 in ['x0', 'x2']:
+                for imm in branch_imms:
+                    test_cases.append({'asm': f"{m} {rs1}, {rs2}, {imm}", 'xlen': 64})
+
+    # 6. U-Type (LUI, AUIPC) & J-Type (JAL)
+    for m in u_ops:
+        for rd in ['x1', 'x2']:
+            for imm in imms_unsigned:
+                test_cases.append({'asm': f"{m} {rd}, 0x{imm:x}", 'xlen': 64})
+    for rd in ['x1', 'x2']:
+        for imm in branch_imms:
+            test_cases.append({'asm': f"jal {rd}, {imm}", 'xlen': 64})
+
+    # Query llvm-mc for authoritative 32-bit encodings
+    asm_input = "\n".join(tc['asm'] for tc in test_cases) + "\n"
+    proc = subprocess.run(
+        ['llvm-mc', '-triple=riscv64', '-M', 'no-aliases', '-M', 'numeric', '--show-encoding'],
+        input=asm_input, text=True, capture_output=True, check=True
+    )
+
+    enc_lines = [line for line in proc.stdout.splitlines() if '# encoding:' in line]
+    if len(enc_lines) != len(test_cases):
+        print(f"Mismatch in llvm-mc output line count: {len(enc_lines)} vs {len(test_cases)}")
+        sys.exit(1)
+
+    for tc, line in zip(test_cases, enc_lines):
+        m = re.search(r'\[0x([0-9a-fA-F]{2}),0x([0-9a-fA-F]{2}),0x([0-9a-fA-F]{2}),0x([0-9a-fA-F]{2})\]', line)
+        b0, b1, b2, b3 = (int(m.group(i), 16) for i in range(1, 5))
+        tc['word'] = b0 | (b1 << 8) | (b2 << 16) | (b3 << 24)
+        tc['bytes'] = f"0x{b0:02x} 0x{b1:02x} 0x{b2:02x} 0x{b3:02x}"
+
+    # 7. Walking-1s bit-flip vectors across all 6 instruction formats (R, I, S, B, U, J)
+    bit_walk_bases = [
+        (0x00000033, list(range(7, 12)) + list(range(15, 25))),  # R-Type: add
+        (0x00000013, list(range(7, 12)) + list(range(15, 32))),  # I-Type: addi
+        (0x00003023, list(range(7, 12)) + list(range(15, 32))),  # S-Type: sd
+        (0x00000063, list(range(7, 12)) + list(range(15, 32))),  # B-Type: beq
+        (0x00000037, list(range(7, 32))),                        # U-Type: lui
+        (0x0000006f, list(range(7, 32))),                        # J-Type: jal
+    ]
+    for base_word, bits in bit_walk_bases:
+        for b in bits:
+            w = base_word ^ (1 << b)
+            b0, b1, b2, b3 = w & 0xff, (w >> 8) & 0xff, (w >> 16) & 0xff, (w >> 24) & 0xff
+            test_cases.append({
+                'asm': None,
+                'xlen': 64,
+                'word': w,
+                'bytes': f"0x{b0:02x} 0x{b1:02x} 0x{b2:02x} 0x{b3:02x}",
+                'bit_walk': b
+            })
+
+    # Query llvm-mc --disassemble on all 32-bit words to verify round-trip disassembly
+    dis_input = "\n".join(tc['bytes'] for tc in test_cases) + "\n"
+    dis_proc = subprocess.run(
+        ['llvm-mc', '-triple=riscv64', '-M', 'no-aliases', '-M', 'numeric', '--disassemble'],
+        input=dis_input, text=True, capture_output=True, check=True
+    )
+    dis_lines = [
+        re.sub(r'\s+', ' ', line.strip().replace('\t', ' '))
+        for line in dis_proc.stdout.splitlines()
+        if line.strip() and not line.strip().startswith('.')
+    ]
+    for tc, dline in zip(test_cases, dis_lines):
+        tc['llvm_dis'] = dline
+
+    # Run Node.js verification against src/static/splash.js
+    node_script = r"""
+const fs = require('fs');
+const vm = require('vm');
+
+const code = fs.readFileSync('src/static/splash.js', 'utf8');
+const startIdx = code.indexOf('const ABI_NAMES =');
+const endIdx = code.indexOf('function setupRiscvExplorer()');
+const riscvCode = code.slice(startIdx, endIdx);
+
+const sandbox = { BigInt };
+vm.createContext(sandbox);
+vm.runInContext(riscvCode, sandbox);
+
+const payload = JSON.parse(fs.readFileSync(0, 'utf8'));
+const cases = payload.cases;
+const verbose = payload.verbose;
+let passed = 0;
+let failed = 0;
+const failures = [];
+const details = [];
+
+function normalizeAsm(s) {
+    return s.trim().replace(/\s+/g, ' ').replace(/0x([0-9a-fA-F]+)/g, (_, h) => String(parseInt(h, 16)));
+}
+
+for (const tc of cases) {
+    const w = tc.word >>> 0;
+    const hexStr = '0x' + w.toString(16).padStart(8, '0');
+    const asmSource = tc.asm || tc.llvm_dis;
+    const assembled = sandbox.assembleRiscv(asmSource);
+    const assembledFromHex = sandbox.assembleRiscv(hexStr);
+    const decoded = sandbox.decodeRiscv(w, tc.xlen);
+
+    // 1. Check 32-bit hex & bit-for-bit encoding match
+    const encMatch = (assembled === w) && (assembledFromHex === w);
+    let bitMatch = true;
+    for (let b = 0; b < 32; b++) {
+        if (((assembled >>> b) & 1) !== ((w >>> b) & 1)) {
+            bitMatch = false;
+            break;
+        }
+    }
+
+    // 2. Check decoded bitfields match hardware instruction bits [31:0]
+    const fieldsMatch = (
+        decoded.u === w &&
+        decoded.opcode === (w & 0x7f) &&
+        decoded.rd === ((w >>> 7) & 0x1f) &&
+        decoded.funct3 === ((w >>> 12) & 0x7) &&
+        decoded.rs1 === ((w >>> 15) & 0x1f) &&
+        decoded.rs2 === ((w >>> 20) & 0x1f) &&
+        decoded.funct7 === ((w >>> 25) & 0x7f)
+    );
+
+    // 3. Check all 32 bits have valid field classifications
+    let bitTypesValid = true;
+    for (let b = 0; b < 32; b++) {
+        const ft = sandbox.getBitFieldType(b, decoded.fmt);
+        if (!['opcode', 'rd', 'funct3', 'rs1', 'rs2', 'funct7', 'imm'].includes(ft)) {
+            bitTypesValid = false;
+        }
+    }
+
+    // 4. Check decoded assembly matches both input asm and llvm-mc --disassemble
+    const decMatch = (
+        normalizeAsm(decoded.asm) === normalizeAsm(asmSource) &&
+        normalizeAsm(decoded.asm) === normalizeAsm(tc.llvm_dis)
+    );
+
+    // 5. Check round-trip re-assembly of decoded instruction
+    const reassembled = sandbox.assembleRiscv(decoded.asm);
+    const roundTripMatch = (reassembled === w);
+
+    const ok = encMatch && bitMatch && fieldsMatch && bitTypesValid && decMatch && roundTripMatch;
+    if (ok) {
+        passed++;
+    } else {
+        failed++;
+        failures.push({
+            asm: tc.asm,
+            expectedHex: hexStr,
+            assembledHex: assembled !== null ? '0x' + assembled.toString(16).padStart(8, '0') : null,
+            decodedAsm: decoded.asm,
+            llvmDis: tc.llvm_dis
+        });
+    }
+
+    if (verbose) {
+        const bin = w.toString(2).padStart(32, '0');
+        const bitSlices = `${bin.slice(0,7)}_${bin.slice(7,12)}_${bin.slice(12,17)}_${bin.slice(17,20)}_${bin.slice(20,25)}_${bin.slice(25,32)}`;
+        const immDisp = decoded.fmt === 'U-Type'
+            ? `0x${((w & 0xfffff000) >>> 0).toString(16)}`
+            : `${decoded.immVal >= 0 ? '+' : ''}${decoded.immVal}`;
+        details.push({
+            ok,
+            xlen: `RV${tc.xlen}I`,
+            mode: tc.bit_walk !== undefined ? `bit[${tc.bit_walk}]` : 'asm/hex',
+            asm: decoded.asm,
+            hex: hexStr,
+            bits: bitSlices,
+            fmt: decoded.fmt,
+            op: decoded.opName,
+            alu: decoded.aluOp,
+            imm: immDisp,
+            wb: `${decoded.wbText}=${decoded.wbVal}`
+        });
+    }
+}
+
+console.log(JSON.stringify({ total: cases.length, passed, failed, failures: failures.slice(0, 10), details }));
+process.exitCode = failed > 0 ? 1 : 0;
+"""
+    node_proc = subprocess.run(
+        ['node', '-e', node_script],
+        input=json.dumps({'cases': test_cases, 'verbose': verbose}), text=True, capture_output=True
+    )
+    if node_proc.stdout:
+        res = json.loads(node_proc.stdout.strip())
+        if verbose and res.get('details'):
+            hdr = (
+                f"{'STATUS':<6}  {'ISA':<5}  {'MODE':<7}  {'INSTRUCTION':<22}  "
+                f"{'HEX':<10}  {'BITS [31:25]_[24:20]_[19:15]_[14:12]_[11:7]_[6:0]':<39}  "
+                f"{'FMT':<7}  {'ALU':<8}  {'IMM':<10}  {'RESULT'}"
+            )
+            print(hdr)
+            print("-" * len(hdr))
+            for d in res['details']:
+                st = "PASS" if d['ok'] else "FAIL"
+                print(
+                    f"{st:<6}  {d['xlen']:<5}  {d['mode']:<7}  {d['asm']:<22}  "
+                    f"{d['hex']:<10}  {d['bits']:<39}  "
+                    f"{d['fmt']:<7}  {d['alu']:<8}  {d['imm']:<10}  {d['wb']}"
+                )
+            print("-" * len(hdr))
+        print(f"RISC-V Verification Suite (llvm-mc + Node.js):")
+        print(f"  Total instruction/register/immediate vectors tested: {res['total']}")
+        print(f"  Passed (32-bit hex, bit-fields [31:0], & disassembly): {res['passed']}/{res['total']}")
+        if res['failed'] > 0:
+            print("  Failures:", json.dumps(res['failures'], indent=2))
+            sys.exit(1)
+        print("  All RV32I & RV64I instruction tests PASSED!")
+    else:
+        print("Node test error:", node_proc.stderr)
+        sys.exit(1)
+
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser(description='Build the diodesign single-page website.')
+    parser.add_argument('--server', action='store_true', help='Start a local dev server and watch for changes.')
+    parser.add_argument('--clear', action='store_true', help='Clear the generated _site/ directory.')
+    parser.add_argument('--test', action='store_true', help='Run automated RV32I/RV64I verification against llvm-mc.')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Print verbose per-instruction decode and datapath table during --test.')
+    args = parser.parse_args()
+
+    if args.clear:
+        if os.path.exists(OUTPUT_DIR):
+            shutil.rmtree(OUTPUT_DIR)
+            print(f"Removed {OUTPUT_DIR}/.")
+    elif args.test:
+        run_tests(verbose=args.verbose)
+    elif args.server:
+        run_server()
+    else:
+        build_site()

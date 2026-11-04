@@ -1,75 +1,74 @@
-# diodesign.github.io CMS
+# diodesign.org
 
-This repository contains a lightweight, Python-powered static site generator as well as site content. It builds the diodesign.org website, which is kindly hosted by GitHub Pages.
+This repository contains the source and zero-dependency Python static build script for **[diodesign.org](https://diodesign.org/)**, the single-page web portal for **the diodesign program**, hosted via GitHub Pages.
 
 ## Architecture
 
-- [`src/data/`](src/data/): Content stored in human-friendly Markdown files with YAML frontmatter.
-- [`src/templates/`](src/templates/): HTML templates with simple `{{ variable }}` placeholders.
-- [`_site/`](_site/): The output directory where the built static site is generated. This directory is ignored by git.
-- [`build.py`](build.py): The build script that assembles the Markdown data and HTML templates into final static pages.
-
-## Setup
-
-The build script to generate the site requires **Python 3**, **PyYAML**, **python-frontmatter**, and **markdown**. To install the dependencies, run the following command:
-
-```bash
-pip install -r requirements.txt
-```
-  
-[build.py](build.py) will attempt to install these dependencies automatically if they are missing.
-
-## Build and test
-
-1.  To build static pages from the current content:
-
-    ```bash
-    python3 build.py
-    ```
-
-2.  Since the site uses root-relative paths, you must use a server for local testing. To run a development server:
-
-    ```bash
-    python3 build.py --server
-    ```
-
-    Then visit [http://localhost:8000](http://localhost:8000). The server will serve from the `_site/` directory, monitor the source files, and automatically rebuild the site whenever changes are detected, allowing for a seamless development experience.
-
-3.  To remove all auto-generated pages prior to committing changes:
-
-    ```bash
-    python3 build.py --clear
-    ```
-
-## CI/CD deployment
-
-This repository includes a GitHub Actions workflow in `.github/workflows/deploy.yml`. When you push to the `prod` branch, GitHub will automatically:
-1. Setup a Python environment.
-2. Run `build.py` to generate the latest site into `_site/`.
-3. Deploy the contents of the `_site/` folder to GitHub Pages.
-
-## Managing content
-
-### Adding and editing content pages
-
-Edit the `.md` files in `src/data/`. These files use YAML frontmatter for metadata (title, subtitle, etc.) and Markdown for the page body.
-
-### Adding log entries
-
-To add a new entry to the Work Log or Life Log, create a new `.md` file in `src/data/work-log/` or `src/data/life-log/`. The build script will automatically handle sorting (by date) and pagination based on the metadata in each file.
-
-Example entry file:
-```markdown
----
-title: "My New Entry"
-date: "2026-04-20"
-byline: "Chris Williams"
-permalink: "my-new-entry.html"
----
-
-This is the content of my log entry in Markdown.
+```text
+.
+├── build.py                 # Zero-dependency static site builder & local dev server
+├── requirements.txt         # Empty (uses Python 3 standard library only)
+├── src/
+│   ├── templates/
+│   │   ├── base.html        # Root HTML shell
+│   │   └── index.html       # Single-page program portal (About, Projects, Updates, Contact)
+│   └── static/
+│       ├── CNAME            # Custom domain configuration (diodesign.org)
+│       ├── splash.js        # Accordion UI controller & procedural alpine landscape engine
+│       ├── style.css        # Responsive single-page styles
+│       ├── favicon.ico
+│       ├── humans.txt
+│       ├── keybase.txt
+│       └── robots.txt
+└── _site/                   # Generated build output (git-ignored)
 ```
 
------
+- **[`src/templates/`](src/templates/)**: Contains [`base.html`](src/templates/base.html) and [`index.html`](src/templates/index.html), which define the central program panel and its single-open expandable sections (*About*, *Projects*, *Updates*, and *Contact*).
+- **[`src/static/`](src/static/)**: Static assets copied directly to the root of `_site/` during the build.
+  - **[`splash.js`](src/static/splash.js)**: Controls the single-open accordion and renders the procedural alpine & fjord landscape background on desktop/tablet screens (automatically bypassed on screens `<= 768px`).
+  - **[`style.css`](src/static/style.css)**: Responsive layout and typography rules.
+- **[`build.py`](build.py)**: Compiles the templates, copies static assets into `_site/`, generates `sitemap.xml` and `llms.txt`, and provides a local development server that rebuilds `_site/` automatically when source files are saved.
 
-See [CONTRIBUTORS](src/data/contributors.md) for copyright and [LICENSE](src/data/license.md) for terms and conditions of use.
+## Requirements
+
+- **Python 3** (uses only the Python standard library; no third-party packages are required).
+
+## Build and Local Development
+
+1. **Build the static site** into `_site/`:
+
+   ```bash
+   python3 build.py
+   ```
+
+2. **Run the local development server** with automatic rebuild on save:
+
+   ```bash
+   python3 build.py --server
+   ```
+
+   Then visit [http://localhost:8000](http://localhost:8000). Any edits to files in `src/` or `build.py` automatically rebuild `_site/` so you can simply refresh your browser.
+
+3. **Clean generated build output**:
+
+   ```bash
+   python3 build.py --clear
+   ```
+
+4. **Run the automated RISC-V instruction and decoder verification suite** (verifies RV32I/RV64I assembly, 32-bit hex encodings, individual bit-fields `[31:0]`, and round-trip disassembly against `llvm-mc`; add `-v` or `--verbose` to print a full table of all 789 test vectors and their decoded webpage values):
+
+   ```bash
+   python3 build.py --test
+   python3 build.py --test --verbose
+   ```
+
+## CI/CD Deployment
+
+The GitHub Actions workflow in [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) runs automatically on pushes to the `prod` branch:
+1. Sets up Python 3.
+2. Runs `python build.py` to compile the site into `./_site`.
+3. Uploads and deploys `./_site` to GitHub Pages.
+
+---
+
+See LICENSE for copyright, usage, and distribution rights.

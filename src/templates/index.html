@@ -1,36 +1,359 @@
 <div class="splash-container">
-    <div id="splash-canvas-wrapper">
+    <div id="splash-canvas-wrapper" aria-hidden="true">
         <canvas id="splash-canvas"></canvas>
     </div>
-    <div class="splash-info container">
-        <div id="splash-text">
-            <h1>the diodesign lab</h1>
-            <p>
-                Synthesizing silicon and intelligence through low-level systems experimentation
+
+    <div class="floating-panel" id="floating-panel">
+        <!-- MAIN PROGRAM VIEW -->
+        <div id="program-view">
+            <div id="splash-text" class="lab-header">
+                <h1>the diodesign program</h1>
+                <p class="lab-subtitle">
+                    Low-level systems, artificial intelligence, and human craft
+                </p>
+            </div>
+
+            <div class="lab-accordion" id="lab-accordion">
+                <!-- 1. About -->
+                <section class="accordion-item">
+                    <button type="button" class="accordion-trigger" aria-expanded="false" aria-controls="section-about" id="trigger-about">
+                        <span class="accordion-title">About</span>
+                    </button>
+                    <div class="accordion-panel" id="section-about" role="region" aria-labelledby="trigger-about">
+                        <div class="accordion-inner">
+                            <div class="accordion-body">
+                                <p>
+                                    <strong>the diodesign program</strong> explores how machines and humans can work together at the very base of the computing stack: operating systems, hypervisors, firmware, and chip design.
+                                </p>
+                                <p>
+                                    AI is at its best when it draws upon and amplifies human aptitude, resourcefulness, and high engineering standards. By pairing machine intelligence with thoughtful human craft, we can build foundational hardware and systems software that are resilient, transparent, and fun to understand and improve.
+                                </p>
+                                <p>
+                                    The program is an independent personal endeavor. All projects and experiments here are not necessarily affiliated with any employer, corporation, or institution.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. Projects -->
+                <section class="accordion-item">
+                    <button type="button" class="accordion-trigger" aria-expanded="false" aria-controls="section-projects" id="trigger-projects">
+                        <span class="accordion-title">Projects</span>
+                    </button>
+                    <div class="accordion-panel" id="section-projects" role="region" aria-labelledby="trigger-projects">
+                        <div class="accordion-inner">
+                            <div class="accordion-body">
+                                <div class="project-list">
+                                    <div class="project-card">
+                                        <div class="project-header">
+                                            <h3><a href="https://diosix.org/" target="_blank" rel="noopener">Diosix</a></h3>
+                                            <div class="project-tags">
+                                                <span class="project-tag">zig</span>
+                                                <span class="project-tag">risc-v</span>
+                                                <span class="project-tag">osdev</span>
+                                            </div>
+                                        </div>
+                                        <p>
+                                            An open-source bare-metal multiprocessor hypervisor written in Zig for 64-bit RISC-V systems. Designed to be lightweight, secure, and reliable, with ongoing work toward self-organizing distributed computing where local machine reasoning helps autonomous VM nodes cooperate gracefully.
+                                        </p>
+                                        <div class="project-links">
+                                            <a href="https://diosix.org/" target="_blank" rel="noopener">diosix.org &rarr;</a>
+                                            <a href="https://github.com/diodesign/diosix" target="_blank" rel="noopener">Source code &rarr;</a>
+                                        </div>
+                                    </div>
+
+                                    <div class="project-card">
+                                        <div class="project-header">
+                                            <h3><a href="https://github.com/diodesign/diosix-agent-skills" target="_blank" rel="noopener">Diosix skills</a></h3>
+                                            <div class="project-tags">
+                                                <span class="project-tag">agentic</span>
+                                            </div>
+                                        </div>
+                                        <p>
+                                            Must-have agent skills for those using LLMs to write, review, and maintain high-quality idiomatic Diosix source code.
+                                        </p>
+                                        <div class="project-links">
+                                            <a href="https://github.com/diodesign/diosix-agent-skills" target="_blank" rel="noopener">Install now &rarr;</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. Updates -->
+                <section class="accordion-item">
+                    <button type="button" class="accordion-trigger" aria-expanded="false" aria-controls="section-updates" id="trigger-updates">
+                        <span class="accordion-title">Updates</span>
+                    </button>
+                    <div class="accordion-panel" id="section-updates" role="region" aria-labelledby="trigger-updates">
+                        <div class="accordion-inner">
+                            <div class="accordion-body">
+                                <ul class="updates-list">
+                                    <li>
+                                        <span class="update-date">Nov 2026</span>
+                                        <div class="update-text">
+                                            <strong>The Diodesign Program</strong> &mdash; Simplified and relaunched this website with a focus on minimalism, tranquility, and Easter eggs.
+                                        </div>
+                                    </li>
+                                    <li>
+                                        <span class="update-date">Oct 2026</span>
+                                        <div class="update-text">
+                                            <strong>Magazine interview</strong> &mdash; For the <a href="https://www.archivemag.co.uk/2804/" target="_blank" rel="noopener">October-November issue</a> of <i>Archive</i>, Chris answered questions about his time as editor of RISC OS and Arm online newspaper <i>Drobe</i> and as editor-in-chief of IT bible <i>The Register</i>.
+                                        </div>
+                                    </li>
+                                    <li>
+                                        <span class="update-date">Apr 2026</span>
+                                        <div class="update-text">
+                                            <strong>Migrated Diosix to Zig</strong> &mdash; Transitioned the Diosix codebase from Rust to Zig, to strike a balance between safe, secure programming and productivity and maintainability.
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4. Contact -->
+                <section class="accordion-item">
+                    <button type="button" class="accordion-trigger" aria-expanded="false" aria-controls="section-contact" id="trigger-contact">
+                        <span class="accordion-title">Contact</span>
+                    </button>
+                    <div class="accordion-panel" id="section-contact" role="region" aria-labelledby="trigger-contact">
+                        <div class="accordion-inner">
+                            <div class="accordion-body">
+                                <p class="contact-intro">
+                                    Whether it’s a quick note, a technical question, or an idea for collaboration, feel free to reach out to program president, CEO, and senior assistant regional director of customer satisfaction <strong>Chris Williams</strong>:
+                                </p>
+                                <div class="contact-grid">
+                                    <a class="contact-item" href="mailto:chrisw@diosix.org">
+                                        <span class="contact-platform">Email</span>
+                                        <span class="contact-handle">chrisw@diosix.org</span>
+                                    </a>
+                                    <a class="contact-item" href="https://github.com/diodesign" target="_blank" rel="noopener">
+                                        <span class="contact-platform">GitHub</span>
+                                        <span class="contact-handle">diodesign</span>
+                                    </a>
+                                    <a class="contact-item" href="https://www.linkedin.com/in/diodesign/" target="_blank" rel="noopener">
+                                        <span class="contact-platform">Resume</span>
+                                        <span class="contact-handle">linkedin.com/in/diodesign</span>
+                                    </a>
+                                    <a class="contact-item" href="https://bsky.app/profile/diodesign.org" target="_blank" rel="noopener">
+                                        <span class="contact-platform">Bluesky</span>
+                                        <span class="contact-handle">@diodesign.org</span>
+                                    </a>
+                                    <a class="contact-item" href="https://keybase.io/diodesign" target="_blank" rel="noopener">
+                                        <span class="contact-platform">Encrypted chat</span>
+                                        <span class="contact-handle">keybase.io/diodesign</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- TACTILE RISC-V EXPLORER VIEW (HIDDEN UNTIL CHIP IS CLICKED) -->
+        <div id="riscv-explorer-view" class="riscv-explorer" hidden>
+            <div class="rv-topbar">
+                <button type="button" class="rv-back-btn" id="rv-back-btn" title="Return to the diodesign program">
+                    &larr; Back
+                </button>
+                <div class="rv-title-group">
+                    <h2>RISC-V instruction set and datapath explorer</h2>
+                    <span class="rv-subtitle">Click individual bits, pick a preset, or type an instruction to trace the CPU core datapath</span>
+                </div>
+                <div class="rv-xlen-toggle" role="group" aria-label="Architecture Width">
+                    <button type="button" class="rv-xlen-btn" data-xlen="32">RV32I</button>
+                    <button type="button" class="rv-xlen-btn active" data-xlen="64">RV64I</button>
+                </div>
+            </div>
+
+            <!-- Assembly Input & Presets -->
+            <div class="rv-controls-row">
+                <div class="rv-asm-box">
+                    <span class="rv-asm-label">ASM</span>
+                    <input type="text" id="rv-asm-input" class="rv-asm-input" value="addi x5, x1, 42" spellcheck="false" autocomplete="off" aria-label="RISC-V Assembly Instruction">
+                    <span id="rv-hex-badge" class="rv-hex-badge">0x02a08293</span>
+                </div>
+                <div class="rv-presets" id="rv-presets">
+                    <button type="button" class="rv-preset-pill" data-asm="addi x5, x1, 42">addi</button>
+                    <button type="button" class="rv-preset-pill" data-asm="add x7, x1, x2">add</button>
+                    <button type="button" class="rv-preset-pill" data-asm="xor x6, x1, x2">xor</button>
+                    <button type="button" class="rv-preset-pill" data-asm="slli x4, x1, 4">slli</button>
+                    <button type="button" class="rv-preset-pill" data-asm="ld x5, 16(x2)" id="rv-preset-mem">ld</button>
+                    <button type="button" class="rv-preset-pill" data-asm="sd x1, 8(x2)" id="rv-preset-store">sd</button>
+                    <button type="button" class="rv-preset-pill" data-asm="beq x1, x2, 12">beq</button>
+                    <button type="button" class="rv-preset-pill" data-asm="lui x5, 0x10400">lui</button>
+                    <button type="button" class="rv-preset-pill rv-rv64-only" data-asm="addiw x5, x1, -8" id="rv-preset-w">addiw</button>
+                </div>
+            </div>
+
+            <!-- Tactile 32-Bit Register Strip -->
+            <div class="rv-bitstrip-wrapper">
+                <div class="rv-bitstrip" id="rv-bitstrip" role="group" aria-label="32-bit instruction register bits"></div>
+                <div class="rv-field-legend" id="rv-field-legend"></div>
+            </div>
+
+            <!-- Interactive Silicon Datapath SVG & Decoded State -->
+            <div class="rv-datapath-card">
+                <svg id="rv-datapath-svg" viewBox="0 0 820 215" class="rv-datapath-svg" aria-label="RISC-V processor datapath diagram">
+                    <!-- Background Wires -->
+                    <g class="rv-wires">
+                        <!-- PC -> Decoder -->
+                        <path id="wire-pc-dec" class="rv-wire active" d="M 88 108 L 138 108" />
+                        <!-- Decoder -> RegFile (rs1, rs2) -->
+                        <path id="wire-dec-rs1" class="rv-wire" d="M 248 82 L 308 82" />
+                        <path id="wire-dec-rs2" class="rv-wire" d="M 248 112 L 308 112" />
+                        <!-- Decoder -> ImmGen -->
+                        <path id="wire-dec-imm" class="rv-wire" d="M 193 145 L 193 175 L 308 175" />
+                        <!-- RegFile rs1 -> ALU A -->
+                        <path id="wire-rs1-alu" class="rv-wire" d="M 438 82 L 502 82" />
+                        <!-- RegFile rs2 -> ALU B -->
+                        <path id="wire-rs2-alu" class="rv-wire" d="M 438 112 L 472 112 L 472 128 L 502 128" />
+                        <!-- ImmGen -> ALU B -->
+                        <path id="wire-imm-alu" class="rv-wire" d="M 438 175 L 484 175 L 484 136 L 502 136" />
+                        <!-- RegFile rs2 -> Data Mem (Store data) -->
+                        <path id="wire-rs2-mem" class="rv-wire" d="M 438 112 L 472 112 L 472 196 L 672 196 L 672 156" />
+                        <!-- ALU -> Data Mem -->
+                        <path id="wire-alu-mem" class="rv-wire" d="M 596 108 L 632 108" />
+                        <!-- ALU -> Writeback Bypass -->
+                        <path id="wire-alu-wb" class="rv-wire" d="M 596 108 L 612 108 L 612 42 L 736 42 L 736 74" />
+                        <!-- Data Mem -> Writeback -->
+                        <path id="wire-mem-wb" class="rv-wire" d="M 712 108 L 736 108" />
+                    </g>
+
+                    <!-- Stage 1: Program Counter -->
+                    <g class="rv-node active" id="node-pc">
+                        <rect x="14" y="72" width="74" height="72" rx="10" />
+                        <text x="51" y="96" class="rv-node-title">PC</text>
+                        <text x="51" y="116" class="rv-node-val" id="svg-pc-val">0x80000000</text>
+                        <text x="51" y="132" class="rv-node-sub" id="svg-xlen-tag">RV64I</text>
+                    </g>
+
+                    <!-- Stage 2: Instruction Decoder -->
+                    <g class="rv-node active" id="node-dec">
+                        <rect x="138" y="64" width="110" height="82" rx="10" />
+                        <text x="193" y="88" class="rv-node-title">DECODE</text>
+                        <text x="193" y="108" class="rv-node-val" id="svg-fmt-val">I-Type</text>
+                        <text x="193" y="128" class="rv-node-sub" id="svg-op-val">OP-IMM (0x13)</text>
+                    </g>
+
+                    <!-- Stage 3A: Register File -->
+                    <g class="rv-node" id="node-regs">
+                        <rect x="308" y="56" width="130" height="84" rx="10" />
+                        <text x="373" y="77" class="rv-node-title" id="svg-reg-title">64-BIT REGS</text>
+                        <text x="373" y="98" class="rv-node-val" id="svg-rs1-val">rs1 (x1): 0x100</text>
+                        <text x="373" y="116" class="rv-node-val" id="svg-rs2-val">rs2 (x2): 0x018</text>
+                        <text x="373" y="132" class="rv-node-sub" id="svg-rd-val">rd: x5</text>
+                    </g>
+
+                    <!-- Stage 3B: Sign-Extend Immediate Generator -->
+                    <g class="rv-node" id="node-imm">
+                        <rect x="308" y="150" width="130" height="50" rx="10" />
+                        <text x="373" y="170" class="rv-node-title" id="svg-imm-title">IMM SEXT-64</text>
+                        <text x="373" y="189" class="rv-node-val" id="svg-imm-val">+42 (0x2a)</text>
+                    </g>
+
+                    <!-- Stage 4: ALU -->
+                    <g class="rv-node" id="node-alu">
+                        <polygon points="502,60 596,82 596,134 502,156 502,118 520,108 502,98" />
+                        <text x="552" y="102" class="rv-node-title">ALU</text>
+                        <text x="552" y="121" class="rv-node-val" id="svg-alu-op">ADD</text>
+                    </g>
+
+                    <!-- Stage 5: Data Memory / Branch Unit -->
+                    <g class="rv-node" id="node-mem">
+                        <rect x="632" y="68" width="80" height="88" rx="10" />
+                        <text x="672" y="95" class="rv-node-title" id="svg-mem-title">MEMORY</text>
+                        <text x="672" y="116" class="rv-node-val" id="svg-mem-val">Bypass</text>
+                        <text x="672" y="135" class="rv-node-sub" id="svg-mem-sub">No R/W</text>
+                    </g>
+
+                    <!-- Stage 6: Writeback Register Update -->
+                    <g class="rv-node" id="node-wb">
+                        <rect x="726" y="68" width="82" height="88" rx="10" />
+                        <text x="767" y="93" class="rv-node-title">RESULT</text>
+                        <text x="767" y="115" class="rv-node-val" id="svg-wb-reg">x5 &larr;</text>
+                        <text x="767" y="135" class="rv-node-sub" id="svg-wb-val">0x12a</text>
+                    </g>
+                </svg>
+
+                <div class="rv-execution-bar" id="rv-execution-bar"></div>
+            </div>
+        </div>
+
+        <div class="panel-footer">
+            <p class="panel-copyright">
+                Est. 2002. &copy; 2026 Chris Williams. Last updated {{ last_updated }}. <a href="https://github.com/diodesign/diodesign.github.io">Source</a>
             </p>
         </div>
-        <div class="search-container" id="search-container">
-            <div class="search-box">
-                <div id="search-status-overlay" class="search-status-overlay" style="display: none;">
-                    <span>Lab AI is ready to download (approx. 4GB). Click here to initialize.</span>
-                </div>
-                <div class="search-inner">
-                    <input type="text" id="search-input" class="search-input" placeholder="Ask the lab anything..."
-                        autocomplete="off">
-                    <div id="search-results" class="search-results"></div>
-                </div>
-            </div>
-            <div id="search-cloud-fallback" class="cloud-fallback" style="display: none;">
-                Neural link stalled. <a href="https://www.google.com/">Use Cloud Search &rarr;</a>
-            </div>
-            <div id="search-reset" class="search-reset">
-                <a href="/">Ask another question &rarr;</a>
-            </div>
-        </div>
     </div>
+
+    <!-- Vector-Rendered RISC-V Silicon Chip Button over Bottom-Right Mountain -->
+    <button type="button" class="riscv-chip-btn" id="riscv-chip-btn" title="Open interactive RISC-V explorer" aria-label="Toggle interactive RISC-V ISA explorer">
+        <svg viewBox="0 0 120 120" class="riscv-chip-svg" aria-hidden="true">
+            <!-- IC Package Pins (Top, Bottom, Left, Right) -->
+            <g class="chip-pins" fill="#93c5fd">
+                <!-- Top pins -->
+                <rect x="25" y="4" width="6" height="11" rx="2" />
+                <rect x="41" y="4" width="6" height="11" rx="2" />
+                <rect x="57" y="4" width="6" height="11" rx="2" />
+                <rect x="73" y="4" width="6" height="11" rx="2" />
+                <rect x="89" y="4" width="6" height="11" rx="2" />
+                <!-- Bottom pins -->
+                <rect x="25" y="105" width="6" height="11" rx="2" />
+                <rect x="41" y="105" width="6" height="11" rx="2" />
+                <rect x="57" y="105" width="6" height="11" rx="2" />
+                <rect x="73" y="105" width="6" height="11" rx="2" />
+                <rect x="89" y="105" width="6" height="11" rx="2" />
+                <!-- Left pins -->
+                <rect x="4" y="25" width="11" height="6" rx="2" />
+                <rect x="4" y="41" width="11" height="6" rx="2" />
+                <rect x="4" y="57" width="11" height="6" rx="2" />
+                <rect x="4" y="73" width="11" height="6" rx="2" />
+                <rect x="4" y="89" width="11" height="6" rx="2" />
+                <!-- Right pins -->
+                <rect x="105" y="25" width="11" height="6" rx="2" />
+                <rect x="105" y="41" width="11" height="6" rx="2" />
+                <rect x="105" y="57" width="11" height="6" rx="2" />
+                <rect x="105" y="73" width="11" height="6" rx="2" />
+                <rect x="105" y="89" width="11" height="6" rx="2" />
+            </g>
+
+            <!-- Outer Ceramic/Silicon IC Package Body -->
+            <rect x="14" y="14" width="92" height="92" rx="12" fill="#1e293b" stroke="#60a5fa" stroke-width="2.2" />
+            <!-- Pin-1 Orientation Notch Dot -->
+            <circle cx="23" cy="23" r="2.5" fill="#60a5fa" />
+
+            <!-- Inner White RISC-V Die Emblem (based on R-on-white.png) -->
+            <g transform="translate(28, 28) scale(0.64)">
+                <rect x="0" y="0" width="100" height="100" rx="4" fill="#ffffff" />
+                <!-- RISC-V 'RV' Monogram Cutout in Deep Navy (#0f172a) -->
+                <path fill="#0f172a" d="
+                    M 0,0
+                    L 28,0
+                    C 45,0 55.5,12 55.5,29.5
+                    C 55.5,45 45,56.5 30,59.5
+                    L 53.8,90
+                    L 100,26.5
+                    L 100,48.5
+                    L 64.5,100
+                    L 42.5,100
+                    L 6,55.5
+                    L 6,48
+                    L 24.5,48
+                    C 34.5,48 41,40.5 41,29.5
+                    C 41,19 34.5,14.5 24.5,14.5
+                    L 0,14.5
+                    Z
+                " />
+            </g>
+        </svg>
+    </button>
 </div>
 
-<script src="/characters.js"></script>
 <script src="/splash.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="/search.js"></script>
