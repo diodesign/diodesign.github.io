@@ -105,7 +105,109 @@ let lastMotionTime = 0;
 let isTransitionComplete = false;
 let pausedAt = 0;
 let totalPausedDuration = 0;
-const FRAME_INTERVAL = 1000 / 30;
+
+// -------------------------------------------------------------
+// COMPUTE CAPABILITY DETECTION & ADAPTIVE FRAME GOVERNOR
+// -------------------------------------------------------------
+// Tiers:
+// 'high':   >=8 CPU threads, dedicated/hardware GPU, 30 FPS, dense scanlines (~100), full blur passes
+// 'medium': 4-7 CPU threads, balanced scanlines (~65), 30/24 FPS
+// 'low':    <=2 CPU threads, software rasterizer (SwiftShader/llvmpipe), data-saver, ~45 scanlines, 20 FPS, bypasses blur canvas
+function detectComputeTier() {
+    if (typeof window === 'undefined') return 'high';
+
+    // 1. Manual query parameter override for testing/auditing (?tier=high|medium|low)
+    try {
+        const urlTier = new URLSearchParams(window.location.search).get('tier');
+        if (urlTier === 'high' || urlTier === 'medium' || urlTier === 'low') {
+            return urlTier;
+        }
+    } catch (_) {}
+
+    if (typeof navigator === 'undefined') return 'high';
+
+    // 2. Respect user's explicit Data Saver preference
+    if (navigator.connection && navigator.connection.saveData) {
+        return 'low';
+    }
+
+    // 3. Hardware specifications
+    const cores = navigator.hardwareConcurrency || 8;
+    const memory = navigator.deviceMemory || 8; // Approx RAM in GiB (Chromium)
+
+    // 4. WebGL probe for software rendering fallback
+    let isSoftwareGPU = false;
+    try {
+        if (typeof document !== 'undefined') {
+            const probeCanvas = document.createElement('canvas');
+            const gl = probeCanvas.getContext('webgl') || probeCanvas.getContext('experimental-webgl');
+            if (gl) {
+                const ext = gl.getExtension('WEBGL_debug_renderer_info');
+                if (ext) {
+                    const renderer = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL).toLowerCase();
+                    if (/swiftshader|llvmpipe|software rasterizer/.test(renderer)) {
+                        isSoftwareGPU = true;
+                    }
+                }
+            }
+        }
+    } catch (_) {}
+
+    if (isSoftwareGPU || cores <= 2 || memory <= 2) {
+        return 'low';
+    }
+    if (cores < 8 || memory < 4) {
+        return 'medium';
+    }
+    return 'high';
+}
+
+let computeTier = detectComputeTier();
+let targetFps = computeTier === 'low' ? 20 : 30;
+let frameInterval = 1000 / targetFps;
+
+// Dynamic performance governor: monitors real-world frame execution time
+let slowFrameCount = 0;
+let fastFrameCount = 0;
+
+function profileFramePerformance(renderDurationMs) {
+    // If a frame takes > 75% of the allotted interval (e.g. > 25ms on 30 FPS target):
+    const slowThreshold = frameInterval * 0.75;
+    if (renderDurationMs > slowThreshold) {
+        slowFrameCount++;
+        fastFrameCount = 0;
+
+        // If struggling for ~1 second (30 slow frames):
+        if (slowFrameCount >= 30) {
+            slowFrameCount = 0;
+            if (targetFps === 30) {
+                targetFps = 20;
+                frameInterval = 1000 / 20;
+            } else if (targetFps === 20) {
+                targetFps = 15;
+                frameInterval = 1000 / 15;
+            } else if (targetFps <= 15 && renderDurationMs > 50) {
+                // Extreme lag failsafe: finalize static artwork and stop animation loop
+                isTransitionComplete = true;
+                stopAnimation();
+                renderFrame(performance.now());
+            }
+        }
+    } else {
+        if (slowFrameCount > 0) slowFrameCount--;
+        // Hysteresis: only step back up if performance is effortlessly fast (< 8ms) for ~5 seconds
+        if (renderDurationMs < 8) {
+            fastFrameCount++;
+            if (fastFrameCount > 150 && targetFps < 30 && computeTier !== 'low') {
+                targetFps = 30;
+                frameInterval = 1000 / 30;
+                fastFrameCount = 0;
+            }
+        } else {
+            fastFrameCount = 0;
+        }
+    }
+}
 
 // Offscreen buffer canvases for code rain layer, radial transparency mask & focus pull
 let photoCrop = { sx: 0, sy: 0, sw: 0, sh: 0 };
@@ -838,8 +940,8 @@ function renderFrame(time) {
     if (imgEl && photoCrop.sw > 0) {
         ctx.drawImage(imgEl, photoCrop.sx, photoCrop.sy, photoCrop.sw, photoCrop.sh, 0, 0, width, height);
 
-        // While streams are converging, overlay softened blur layer with smoothly decaying alpha
-        if (blurAmount > 0.001 && isBlurReady && blurCanvas) {
+        // While streams are converging, overlay softened blur layer with smoothly decaying alpha (bypassed on low compute tier)
+        if (computeTier !== 'low' && blurAmount > 0.001 && isBlurReady && blurCanvas) {
             ctx.save();
             ctx.globalAlpha = blurAmount;
             ctx.drawImage(blurCanvas, 0, 0, width, height);
@@ -1082,17 +1184,21 @@ function animate(time) {
 
     rafId = requestAnimationFrame(animate);
 
-    // Frame rate pacing (rock-steady 30 FPS, ~33.3ms)
-    if (time - lastFrameTime < FRAME_INTERVAL) {
+    // Dynamic frame rate pacing
+    if (time - lastFrameTime < frameInterval) {
         return;
     }
     if (lastFrameTime === 0 || time - lastFrameTime > 200) {
         lastFrameTime = time;
     } else {
-        lastFrameTime += FRAME_INTERVAL;
+        lastFrameTime += frameInterval;
     }
 
+    const tStart = performance.now();
     renderFrame(time);
+    const renderDuration = performance.now() - tStart;
+
+    profileFramePerformance(renderDuration);
 }
 
 function resizeAndRebuild() {
@@ -1119,8 +1225,25 @@ function resizeAndRebuild() {
         maskCanvas.height = height;
     }
 
-    // Aim for ~100 horizontal lines filling the screen
-    numRows = Math.max(65, Math.min(105, Math.round(height / 14)));
+    // Scale scanline density to detected hardware compute tier:
+    // 'high' (>=8 cores/hw GPU): 14 divisor (65-105 rows, ~100 rows standard)
+    // 'medium' (4-7 cores): 16 divisor (52-85 rows)
+    // 'low' (<=2 cores/sw GPU): 20 divisor (38-65 rows)
+    let rowDivisor = 14;
+    let minRows = 65;
+    let maxRows = 105;
+
+    if (computeTier === 'medium') {
+        rowDivisor = 16;
+        minRows = 52;
+        maxRows = 85;
+    } else if (computeTier === 'low') {
+        rowDivisor = 20;
+        minRows = 38;
+        maxRows = 65;
+    }
+
+    numRows = Math.max(minRows, Math.min(maxRows, Math.round(height / rowDivisor)));
     lineHeight = Math.max(10, Math.round(height / numRows));
     fontSize = Math.max(9, Math.min(13, Math.round(lineHeight * 0.88)));
 
