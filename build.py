@@ -78,24 +78,68 @@ def generate_sitemap():
 
 
 def generate_llms_txt():
-    """Generates a concise llms.txt describing the program and its projects."""
+    """Generates an llms.txt standard index file for LLMs and AI coding agents."""
     content = (
         "# the diodesign program\n\n"
-        "> Blending systems engineering, AI, and human craft at the foundation of computing.\n\n"
-        "The diodesign program is an independent endeavor run by Chris Williams exploring how artificial intelligence and human engineering can work together to innovate at the very base of the computing stack: firmware, hypervisors, operating systems, and chip design.\n\n"
-        "## Projects\n\n"
-        "- [Diosix](https://diosix.org/): An open-source bare-metal multiprocessor hypervisor written in Zig for 64-bit RISC-V systems.\n"
-        "- [Diosix skills](https://github.com/diodesign/diosix-agent-skills): Agent skills for creating, maintaining, and reviewing idiomatic Diosix source code.\n\n"
-        "## Contact\n\n"
+        "> Low-level systems engineering, artificial intelligence, and human craft at the foundation of computing.\n\n"
+        "The diodesign program is an independent endeavor run by Chris Williams exploring how artificial intelligence and human engineering can innovate together at the base of the computing stack: firmware, hypervisors, operating systems, and chip design.\n\n"
+        "## Core Projects\n\n"
+        "- [Diosix](https://diosix.org/): An open-source bare-metal multiprocessor hypervisor written in Zig for 64-bit RISC-V (RV64GC) systems.\n"
+        "- [Diosix Agent Skills](https://github.com/diodesign/diosix-agent-skills): Curated agent skills for LLMs and AI agents (Gemini, Claude, GPT) to write, review, and maintain idiomatic Diosix systems code.\n\n"
+        "## Deep Context & Specifications\n\n"
+        "- [Full LLM Context](/llms-full.txt): Complete unabridged project documentation, architecture specifications, and contact profiles for ingestion by LLMs.\n"
+        "- [Diosix Source Code](https://github.com/diodesign/diosix): GitHub repository containing the complete hypervisor implementation.\n\n"
+        "## Contact & Human Profiles\n\n"
+        "- Founder: Chris Williams (Systems Architect & Engineer)\n"
         "- Email: chrisw@diosix.org\n"
         "- GitHub: https://github.com/diodesign\n"
-        "- LinkedIn: https://www.linkedin.com/in/diodesign/\n"
         "- Bluesky: https://bsky.app/profile/diodesign.org\n"
+        "- LinkedIn: https://www.linkedin.com/in/diodesign/\n"
         "- Keybase: https://keybase.io/diodesign\n"
     )
     with open(os.path.join(OUTPUT_DIR, 'llms.txt'), 'w', encoding='utf-8') as f:
         f.write(content)
     print("Built llms.txt")
+
+
+def generate_llms_full_txt():
+    """Generates an unabridged llms-full.txt file providing comprehensive context for AI agents."""
+    content = (
+        "# the diodesign program — Comprehensive AI / LLM Context\n\n"
+        "> Low-level systems engineering, artificial intelligence, and human craft at the foundation of computing.\n\n"
+        "## Mission & Philosophy\n\n"
+        "The diodesign program is an independent engineering endeavor led by Chris Williams. The initiative investigates the synthesis between human engineering craft and artificial intelligence at the lowest levels of computing hardware and software: operating systems, hypervisors, firmware, and microprocessor architecture.\n\n"
+        "Key tenets:\n"
+        "1. AI achieves its highest efficacy when guided by rigorous human domain knowledge, taste, and discipline.\n"
+        "2. Foundational systems should be small, transparent, verifiable, resilient, and enjoyable to understand.\n"
+        "3. Pair machine intelligence with modern systems languages (such as Zig) and open architectures (such as RISC-V) to build clean, maintainable infrastructure.\n\n"
+        "## Primary Projects\n\n"
+        "### 1. Diosix Hypervisor\n"
+        "- **Website**: https://diosix.org/\n"
+        "- **Repository**: https://github.com/diodesign/diosix\n"
+        "- **Target Architecture**: 64-bit RISC-V (RV64GC) with hypervisor extensions (H-extension) and M-mode/S-mode/U-mode privilege levels.\n"
+        "- **Implementation Language**: Zig (migrated from Rust to achieve balanced safety, productivity, and bare-metal clarity).\n"
+        "- **Core Architecture**: Microkernel / hypervisor design providing hardware-enforced virtual machine isolation, deterministic memory mapping, physical/virtual core scheduling, and zero-overhead guest execution.\n"
+        "- **Distributed Computing Vision**: Ongoing research toward self-organizing distributed computing networks where localized machine reasoning assists autonomous virtual machine nodes to cooperatively balance workloads and heal failures.\n\n"
+        "### 2. Diosix Agent Skills\n"
+        "- **Repository**: https://github.com/diodesign/diosix-agent-skills\n"
+        "- **Purpose**: Specialized agent skills designed for autonomous AI agents (Antigravity, Gemini CLI, Claude Code, etc.) to author, review, refactor, and audit idiomatic Zig 0.14+ hypervisor code, assembly stubs, and technical documentation.\n"
+        "- **Capabilities**: Includes architectural guidelines, memory model constraints, security audit checklists, and documentation standards.\n\n"
+        "### 3. RISC-V Silicon & Datapath Explorer\n"
+        "- **Host**: https://diodesign.org/\n"
+        "- **Function**: Interactive, real-time instruction set architecture (ISA) explorer and single-cycle datapath visualizer for RV32I and RV64I.\n"
+        "- **Capabilities**: Enables tactile bit-flipping across 32 instruction bits, live two-way assembly/disassembly, control signal decomposition, immediate field decoding (R/I/S/B/U/J types), and SVG circuit datapath animation.\n\n"
+        "## People & Contact\n\n"
+        "- **Founder & Lead Engineer**: Chris Williams\n"
+        "- **Email**: chrisw@diosix.org\n"
+        "- **GitHub**: https://github.com/diodesign\n"
+        "- **Bluesky**: https://bsky.app/profile/diodesign.org\n"
+        "- **LinkedIn**: https://www.linkedin.com/in/diodesign/\n"
+        "- **Keybase**: https://keybase.io/diodesign\n"
+    )
+    with open(os.path.join(OUTPUT_DIR, 'llms-full.txt'), 'w', encoding='utf-8') as f:
+        f.write(content)
+    print("Built llms-full.txt")
 
 
 def get_last_updated_date():
@@ -219,6 +263,7 @@ def build_site():
 
     generate_sitemap()
     generate_llms_txt()
+    generate_llms_full_txt()
 
 
 def get_file_mtimes():
