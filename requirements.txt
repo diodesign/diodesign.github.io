@@ -1,1 +1,2 @@
-# No external dependencies required — build.py uses only the Python standard library.
+Pillow>=10.0.0
+

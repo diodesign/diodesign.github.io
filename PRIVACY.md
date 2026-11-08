@@ -1,6 +1,6 @@
 # Privacy policy
 
-[diodesign.org](https://diodesign.org/) is a static single-page website for **the diodesign program** with no backend server, database, or third-party tracking scripts.
+[diodesign.org](https://diodesign.org/) is a static single-page website for **the diodesign program** served as pre-built static assets, with no backend application server, database, or third-party tracking scripts.
 
 The site's maintainer does not collect, log, store, or sell any personal data from visitors.
 
