@@ -13,9 +13,10 @@ This repository contains the source and zero-dependency Python static build scri
 │   │   ├── base.html        # Root HTML shell
 │   │   └── index.html       # Single-page program portal (About, Projects, Updates, Contact)
 │   └── static/
-│       ├── CNAME            # Custom domain configuration (diodesign.org)
-│       ├── splash.js        # Accordion UI controller & procedural alpine landscape engine
-│       ├── style.css        # Responsive single-page styles
+│       ├── CNAME                  # Custom domain configuration (diodesign.org)
+│       ├── alpine-reference.webp  # High-contrast alpine massif reference map for matrix stream
+│       ├── splash.js              # Accordion UI controller, sideways matrix rain mountain generator & RISC-V explorer
+│       ├── style.css              # Responsive single-page styles
 │       ├── favicon.ico
 │       ├── humans.txt
 │       ├── keybase.txt
@@ -25,7 +26,7 @@ This repository contains the source and zero-dependency Python static build scri
 
 - **[`src/templates/`](src/templates/)**: Contains [`base.html`](src/templates/base.html) and [`index.html`](src/templates/index.html), which define the central program panel and its single-open expandable sections (*About*, *Projects*, *Updates*, and *Contact*).
 - **[`src/static/`](src/static/)**: Static assets copied directly to the root of `_site/` during the build.
-  - **[`splash.js`](src/static/splash.js)**: Controls the single-open accordion and renders the procedural alpine & fjord landscape background on desktop/tablet screens (automatically bypassed on screens `<= 768px`).
+  - **[`splash.js`](src/static/splash.js)**: Controls the single-open accordion, drives the procedural sideways matrix rain and snowy alpine mountain range background generator on desktop/tablet screens (automatically bypassed on screens `<= 768px`), and powers the interactive RISC-V instruction set and datapath explorer.
   - **[`style.css`](src/static/style.css)**: Responsive layout and typography rules.
 - **[`build.py`](build.py)**: Compiles the templates, copies static assets into `_site/`, generates `sitemap.xml` and `llms.txt`, and provides a local development server that rebuilds `_site/` automatically when source files are saved.
 
