@@ -514,21 +514,30 @@ function buildMaskCanvas() {
         ? ((380 - photoCrop.sy) / photoCrop.sh) * height
         : height * 0.52;
 
+    const rightX = photoCrop.sw > 0
+        ? ((1020 - photoCrop.sx) / photoCrop.sw) * width
+        : width * 0.82;
+    const rightY = photoCrop.sh > 0
+        ? ((360 - photoCrop.sy) / photoCrop.sh) * height
+        : height * 0.48;
+
     const circles = [
         // 1. Centerpiece: Towering alpine summit horn & knife-edge ridges
-        { x: summitX, y: summitY, r: minDim * 0.50, maxA: 0.98 },
+        { x: summitX, y: summitY, r: minDim * 0.52, maxA: 0.98 },
         // 2. Left flank: High ridges and cascading rock gullies
-        { x: leftX, y: leftY, r: minDim * 0.42, maxA: 0.90 },
-        // 3. Atmospheric Sky Matrix
-        { x: width * 0.50, y: height * 0.10, r: minDim * 0.40, maxA: 0.85 }
+        { x: leftX, y: leftY, r: minDim * 0.44, maxA: 0.90 },
+        // 3. Right flank: Glaciers, ridges, and valley
+        { x: rightX, y: rightY, r: minDim * 0.48, maxA: 0.92 },
+        // 4. Atmospheric Sky Matrix
+        { x: width * 0.50, y: height * 0.10, r: minDim * 0.42, maxA: 0.85 }
     ];
 
     for (const c of circles) {
         const grad = maskCtx.createRadialGradient(c.x, c.y, 0, c.x, c.y, c.r);
         grad.addColorStop(0.00, `rgba(255, 255, 255, ${c.maxA})`);
-        grad.addColorStop(0.30, `rgba(255, 255, 255, ${c.maxA * 0.85})`);
-        grad.addColorStop(0.60, `rgba(255, 255, 255, ${c.maxA * 0.45})`);
-        grad.addColorStop(0.82, `rgba(255, 255, 255, ${c.maxA * 0.15})`);
+        grad.addColorStop(0.35, `rgba(255, 255, 255, ${c.maxA * 0.85})`);
+        grad.addColorStop(0.65, `rgba(255, 255, 255, ${c.maxA * 0.45})`);
+        grad.addColorStop(0.85, `rgba(255, 255, 255, ${c.maxA * 0.15})`);
         grad.addColorStop(1.00, 'rgba(255, 255, 255, 0.0)');
 
         maskCtx.fillStyle = grad;
@@ -553,7 +562,7 @@ function renderFrame(time) {
     if (imgEl && photoCrop.sw > 0) {
         ctx.drawImage(imgEl, photoCrop.sx, photoCrop.sy, photoCrop.sw, photoCrop.sh, 0, 0, width, height);
         // Atmospheric twilight grading over photo so colors harmonize with diodesign palette
-        ctx.fillStyle = 'rgba(2, 6, 23, 0.32)';
+        ctx.fillStyle = 'rgba(2, 6, 23, 0.38)';
         ctx.fillRect(0, 0, width, height);
     } else {
         ctx.fillStyle = '#000000';
@@ -564,9 +573,6 @@ function renderFrame(time) {
     const targetCtx = rainCtx || ctx;
     if (rainCtx) {
         rainCtx.clearRect(0, 0, width, height);
-        // Dark nocturnal matrix backing inside the code rain layer
-        rainCtx.fillStyle = 'rgba(0, 0, 0, 0.86)';
-        rainCtx.fillRect(0, 0, width, height);
     }
 
     targetCtx.font = fontSize + 'px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace';
