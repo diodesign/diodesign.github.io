@@ -673,11 +673,11 @@ function buildMaskCanvas() {
         );
 
         // Precompute active row ranges based on continuous panoramic mask.webp:
-        // Spans full viewport width horizontally, and sky through lower mountain slopes (y <= 620)
+        // Spans full viewport width horizontally, and sky through lower mountain slopes (y <= 560, culling invisible rows below ~78% height)
         const minX = 0;
         const maxX = width;
         const minY = 0;
-        const maxY = Math.min(height, Math.ceil(((620 - photoCrop.sy) / photoCrop.sh) * height));
+        const maxY = Math.min(height, Math.ceil(((560 - photoCrop.sy) / photoCrop.sh) * height));
 
         maskRowRanges = new Array(numRows);
         for (let r = 0; r < numRows; r++) {

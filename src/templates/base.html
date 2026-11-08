@@ -5,11 +5,130 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>the diodesign program</title>
+    <meta name="description" content="the diodesign program: Blending low-level systems engineering, artificial intelligence, and human craft at the foundation of computing — operating systems, hypervisors, firmware, and chip design.">
+    <meta name="keywords" content="RISC-V, hypervisor, Zig, systems programming, osdev, AI agents, firmware, diodesign, Diosix, Chris Williams">
+    <meta name="author" content="Chris Williams">
+    <meta name="creator" content="Chris Williams">
+    <meta name="publisher" content="the diodesign program">
+    <link rel="canonical" href="https://diodesign.org/">
+
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://diodesign.org/">
+    <meta property="og:site_name" content="the diodesign program">
+    <meta property="og:title" content="the diodesign program">
+    <meta property="og:description" content="Low-level systems, artificial intelligence, and human craft at the foundation of computing: firmware, hypervisors, operating systems, and chip design.">
+    <meta property="og:image" content="https://diodesign.org/background.webp">
+    <meta property="og:image:alt" content="Sideways code rain streaming across an alpine mountain backdrop">
+    <meta property="og:image:width" content="1280">
+    <meta property="og:image:height" content="714">
+
+    <!-- Twitter / X Cards -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="the diodesign program">
+    <meta name="twitter:description" content="Low-level systems, artificial intelligence, and human craft at the foundation of computing.">
+    <meta name="twitter:image" content="https://diodesign.org/background.webp">
+
+    <!-- Machine & AI Discovery -->
+    <link rel="alternate" type="text/plain" href="/llms.txt" title="LLM Context (llms.txt)">
+    <link rel="alternate" type="text/plain" href="/llms-full.txt" title="Full LLM Context (llms-full.txt)">
+    <link rel="author" href="/humans.txt">
+    <link rel="sitemap" type="application/xml" href="/sitemap.xml">
+
+    <!-- Schema.org JSON-LD Structured Data for Search Engines & AI Crawlers -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@graph": [
+            {
+                "@type": "WebSite",
+                "@id": "https://diodesign.org/#website",
+                "url": "https://diodesign.org/",
+                "name": "the diodesign program",
+                "description": "Low-level systems, artificial intelligence, and human craft at the foundation of computing: firmware, hypervisors, operating systems, and chip design.",
+                "publisher": { "@id": "https://diodesign.org/#organization" }
+            },
+            {
+                "@type": "Organization",
+                "@id": "https://diodesign.org/#organization",
+                "name": "the diodesign program",
+                "url": "https://diodesign.org/",
+                "logo": "https://diodesign.org/background.webp",
+                "founder": {
+                    "@type": "Person",
+                    "name": "Chris Williams",
+                    "url": "https://diodesign.org/",
+                    "jobTitle": "Systems Architect & Engineer",
+                    "sameAs": [
+                        "https://github.com/diodesign",
+                        "https://bsky.app/profile/diodesign.org",
+                        "https://www.linkedin.com/in/diodesign/",
+                        "https://keybase.io/diodesign"
+                    ]
+                },
+                "sameAs": [
+                    "https://github.com/diodesign",
+                    "https://bsky.app/profile/diodesign.org",
+                    "https://www.linkedin.com/in/diodesign/"
+                ]
+            },
+            {
+                "@type": "SoftwareApplication",
+                "@id": "https://diodesign.org/#diosix",
+                "name": "Diosix",
+                "applicationCategory": "DeveloperApplication",
+                "operatingSystem": "Bare-metal 64-bit RISC-V",
+                "description": "An open-source bare-metal multiprocessor hypervisor written in Zig for 64-bit RISC-V systems.",
+                "url": "https://diosix.org/",
+                "author": { "@id": "https://diodesign.org/#organization" },
+                "codeRepository": "https://github.com/diodesign/diosix",
+                "programmingLanguage": "Zig"
+            }
+        ]
+    }
+    </script>
+
+    <!-- Typography & Static Assets -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/style.css">
     <link rel="preload" as="image" href="/background.webp" type="image/webp">
+
+    <!-- Progressive Enhancement for Non-JavaScript & Text-Based Browsers -->
+    <noscript>
+        <style>
+            /* 1. Show static photographic backdrop for non-JS browsers */
+            body {
+                background: #000000 url('/background.webp') center/cover no-repeat fixed;
+            }
+            /* 2. Naturally expand all accordion panels so all copy & links are 100% visible */
+            .accordion-panel {
+                display: block !important;
+                grid-template-rows: none !important;
+                opacity: 1 !important;
+                height: auto !important;
+                visibility: visible !important;
+            }
+            .accordion-trigger {
+                pointer-events: none;
+                cursor: default;
+            }
+            .accordion-trigger::after {
+                display: none !important;
+            }
+            /* 3. Hide JS-only interactive elements */
+            #riscv-chip-btn,
+            #splash-canvas-wrapper {
+                display: none !important;
+            }
+            .floating-panel {
+                backdrop-filter: none;
+                -webkit-backdrop-filter: none;
+                background: rgba(10, 16, 31, 0.94);
+            }
+        </style>
+    </noscript>
 </head>
 
 <body class="{{ body_class }}">

@@ -2,3 +2,8 @@ User-agent: *
 Allow: /
 
 Sitemap: https://diodesign.org/sitemap.xml
+
+# LLM & AI agent discovery
+# Context files for LLMs and autonomous agents:
+# https://diodesign.org/llms.txt
+# https://diodesign.org/llms-full.txt
