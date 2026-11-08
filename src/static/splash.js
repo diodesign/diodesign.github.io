@@ -259,7 +259,7 @@ const RISCV_INSTRUCTION_CORPUS = [
     'never attribute to malice something adequately explained by stupidity... ',
     '0x80000000 -> 0x1000 ',
     "it's better to regret something you have done than regret something you haven't done... ",
-    "I thought what I'd do was, I'd pretend I was one of those deaf-mutes... "
+    "I thought what I'd do was, I'd pretend I was one of those... "
 ];
 
 const CODE_RAIN_NOISE_PALETTE = [
