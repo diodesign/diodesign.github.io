@@ -90,12 +90,6 @@ const RISCV_INSTRUCTION_CORPUS = [
     '0x80000000 -> 0x1000 '
 ];
 
-// Color palette constants (diodesign blues, snowy white, deep navy)
-const COLOR_SNOW_WHITE = 'rgba(255, 255, 255, 0.98)';
-const COLOR_SNOW_CYAN  = 'rgba(125, 211, 252, 0.92)';
-const COLOR_ROCK_AZURE = 'rgba(56, 189, 248, 0.85)';
-const COLOR_ROCK_NAVY  = 'rgba(30, 58, 138, 0.75)';
-
 const MATRIX_NOISE_PALETTE = [
     'rgba(30, 58, 138, 0.65)',
     'rgba(37, 99, 235, 0.75)',
@@ -120,15 +114,8 @@ function hashInt(x) {
 }
 
 function pickGlyph(tokenIdx, rowIdx, mtnPix) {
-    const h = hashInt((tokenIdx * 37) ^ (rowIdx * 1013));
-    const idx = Math.floor(h * 16) % 16;
-    if (!mtnPix || !mtnPix.isMtn || mtnPix.type === 'sky') return SKY_CHARS[idx];
-    if (mtnPix.type === 'alpenglow' || mtnPix.type === 'beacon' || mtnPix.type === 'building_window') return ALPENGLOW_CHARS[idx];
-    if (mtnPix.type === 'snow' || mtnPix.type === 'building_roof') return SNOW_CHARS[idx];
-    if (mtnPix.type === 'shadow') return SHADOW_CHARS[idx];
-    if (mtnPix.type === 'tree') return TREE_CHARS[idx];
-    if (mtnPix.fill >= 0.38) return SNOW_CHARS[idx];
-    return SLOPE_CHARS[idx];
+    const idx = (hashInt((tokenIdx * 37) ^ (rowIdx * 1013)) * 16) | 0;
+    return (mtnPix && mtnPix.glyphSet) ? mtnPix.glyphSet[idx & 15] : SKY_CHARS[idx & 15];
 }
 
 // Atmospheric digital sky color model: fills top half with luminous nocturnal matrix blues
@@ -151,427 +138,37 @@ function getSkyColor(yn, colIdx, rowIdx) {
 }
 
 // -------------------------------------------------------------
-// REALISTIC PROCEDURAL ALPINE MOUNTAIN RANGE SYNTHESIZER
+// PROCEDURAL SILHOUETTE FALLBACK (Used only if image unavailable)
 // -------------------------------------------------------------
 
-function hash2(ix, iy) {
-    let n = (Math.imul(ix, 374761393) + Math.imul(iy, 668265263)) | 0;
-    n = Math.imul(n ^ (n >>> 13), 1274126177) | 0;
-    return ((n ^ (n >>> 16)) >>> 0) / 4294967296.0;
-}
-
-function smoothHermite(t) {
-    return t * t * (3.0 - 2.0 * t);
-}
-
-function noise2(x, y) {
-    const x0 = Math.floor(x), y0 = Math.floor(y);
-    const fx = smoothHermite(x - x0), fy = smoothHermite(y - y0);
-    const v00 = hash2(x0, y0), v10 = hash2(x0 + 1, y0);
-    const v01 = hash2(x0, y0 + 1), v11 = hash2(x0 + 1, y0 + 1);
-    const v0 = v00 * (1.0 - fx) + v10 * fx;
-    const v1 = v01 * (1.0 - fx) + v11 * fx;
-    return v0 * (1.0 - fy) + v1 * fy;
-}
-
-function ridged2(x, y, octaves = 5) {
-    let val = 0.0, amp = 1.0, freq = 1.0, weight = 1.0, tot = 0.0;
-    for (let o = 0; o < octaves; o++) {
-        const n = (noise2(x * freq, y * freq) - 0.5) * 2.0;
-        let sig = 1.0 - Math.abs(n);
-        sig = sig * sig * weight;
-        weight = Math.min(1.0, Math.max(0.0, sig * 1.85));
-        val += sig * amp;
-        tot += amp;
-        freq *= 2.05;
-        amp *= 0.50;
-    }
-    return val / tot;
-}
-
-function fbm2(x, y, octaves = 4) {
-    let val = 0.0, amp = 1.0, freq = 1.0, tot = 0.0;
-    for (let o = 0; o < octaves; o++) {
-        val += noise2(x * freq, y * freq) * amp;
-        tot += amp;
-        freq *= 2.0;
-        amp *= 0.5;
-    }
-    return val / tot;
-}
-
 function buildMountainGrid(nRows, nCols) {
-    // 1. Precalculate 3 realistic terrain crest profiles
-    const crest_bg = new Array(nCols);
-    const crest_mid = new Array(nCols);
-    const crest_hills = new Array(nCols);
-
-    for (let c = 0; c < nCols; c++) {
-        const xn = c / nCols;
-
-        // Layer 1: High Alpine Horns (peaks at x ~ 0.18, 0.48, 0.80)
-        const p1 = Math.exp(-Math.pow((xn - 0.18) * 4.2, 2.0)) * 0.28;
-        const p2 = Math.exp(-Math.pow((xn - 0.80) * 3.8, 2.0)) * 0.32;
-        const p3 = Math.exp(-Math.pow((xn - 0.48) * 5.0, 2.0)) * 0.16;
-        const r1 = ridged2(xn * 8.5 + 1.2, 3.4, 5) * 0.16;
-        crest_bg[c] = 0.40 - (p1 + p2 + p3 + r1);
-
-        // Layer 2: Midground Massif & Cirques (peaks at x ~ 0.08, 0.36, 0.64, 0.94)
-        const m1 = Math.exp(-Math.pow((xn - 0.08) * 4.0, 2.0)) * 0.20;
-        const m2 = Math.exp(-Math.pow((xn - 0.36) * 4.5, 2.0)) * 0.22;
-        const m3 = Math.exp(-Math.pow((xn - 0.64) * 4.2, 2.0)) * 0.24;
-        const m4 = Math.exp(-Math.pow((xn - 0.94) * 4.0, 2.0)) * 0.20;
-        const r2 = ridged2(xn * 9.2 + 8.7, 7.8, 4) * 0.12;
-        crest_mid[c] = 0.56 - (m1 + m2 + m3 + m4 + r2);
-
-        // Layer 3: Rolling Green Foothills & Alpine Meadows
-        const h_wave = Math.sin(xn * Math.PI * 3.5 + 0.5) * 0.06 + Math.cos(xn * Math.PI * 5.2) * 0.04;
-        const h_fbm = fbm2(xn * 12.0 + 3.4, 8.2, 3) * 0.06;
-        crest_hills[c] = 0.65 + h_wave + h_fbm;
-    }
-
-    // 2. Alpine Buildings / Outposts with Warm Glowing Soft Yellow Windows
-    // Left Chalet on hillside (x ~ 0.09 to 0.16)
-    // Right Research Lab on meadow (x ~ 0.81 to 0.89)
-    const bldg1_c1 = Math.round(0.09 * nCols);
-    const bldg1_c2 = bldg1_c1 + Math.max(12, Math.round(nCols * 0.055));
-    const bldg1_r_top = Math.round(0.65 * nRows);
-    const bldg1_r_base = Math.round(0.74 * nRows);
-
-    const bldg2_c1 = Math.round(0.81 * nCols);
-    const bldg2_c2 = bldg2_c1 + Math.max(14, Math.round(nCols * 0.065));
-    const bldg2_r_top = Math.round(0.67 * nRows);
-    const bldg2_r_base = Math.round(0.76 * nRows);
-
-    const buildings = [
-        {
-            c1: bldg1_c1,
-            c2: bldg1_c2,
-            rTop: bldg1_r_top,
-            rBase: bldg1_r_base,
-            windows: [
-                {
-                    c1: bldg1_c1 + Math.round((bldg1_c2 - bldg1_c1) * 0.18),
-                    c2: bldg1_c1 + Math.round((bldg1_c2 - bldg1_c1) * 0.42),
-                    r1: bldg1_r_top + 2,
-                    r2: bldg1_r_base - 2
-                },
-                {
-                    c1: bldg1_c1 + Math.round((bldg1_c2 - bldg1_c1) * 0.58),
-                    c2: bldg1_c1 + Math.round((bldg1_c2 - bldg1_c1) * 0.82),
-                    r1: bldg1_r_top + 2,
-                    r2: bldg1_r_base - 2
-                }
-            ]
-        },
-        {
-            c1: bldg2_c1,
-            c2: bldg2_c2,
-            rTop: bldg2_r_top,
-            rBase: bldg2_r_base,
-            windows: [
-                {
-                    c1: bldg2_c1 + Math.round((bldg2_c2 - bldg2_c1) * 0.16),
-                    c2: bldg2_c1 + Math.round((bldg2_c2 - bldg2_c1) * 0.42),
-                    r1: bldg2_r_top + 2,
-                    r2: bldg2_r_base - 2
-                },
-                {
-                    c1: bldg2_c1 + Math.round((bldg2_c2 - bldg2_c1) * 0.58),
-                    c2: bldg2_c1 + Math.round((bldg2_c2 - bldg2_c1) * 0.84),
-                    r1: bldg2_r_top + 2,
-                    r2: bldg2_r_base - 2
-                }
-            ]
-        }
-    ];
-
-    // 3. Conifer Pine Trees scattered across the rolling hills and valleys
-    const treeSpecs = [
-        // Left flank grove
-        { x: 0.04, y: 0.70, h: 9, w: 5 },
-        { x: 0.07, y: 0.73, h: 11, w: 6 },
-        { x: 0.10, y: 0.71, h: 8, w: 5 },
-        { x: 0.18, y: 0.76, h: 10, w: 6 },
-        { x: 0.21, y: 0.73, h: 8, w: 5 },
-        { x: 0.24, y: 0.79, h: 12, w: 7 },
-        // Lower center-left
-        { x: 0.31, y: 0.81, h: 9, w: 5 },
-        { x: 0.35, y: 0.84, h: 11, w: 6 },
-        { x: 0.39, y: 0.82, h: 8, w: 5 },
-        // Lower center-right
-        { x: 0.61, y: 0.82, h: 10, w: 6 },
-        { x: 0.65, y: 0.80, h: 8, w: 5 },
-        { x: 0.69, y: 0.84, h: 12, w: 7 },
-        // Right flank grove framing outpost
-        { x: 0.77, y: 0.74, h: 9, w: 5 },
-        { x: 0.80, y: 0.76, h: 11, w: 6 },
-        { x: 0.91, y: 0.75, h: 10, w: 6 },
-        { x: 0.94, y: 0.78, h: 12, w: 7 },
-        { x: 0.97, y: 0.72, h: 8, w: 5 }
-    ];
-
-    const trees = treeSpecs.map(t => {
-        const col = Math.round(t.x * nCols);
-        const hillBase = Math.round(crest_hills[col % nCols] * nRows) + 2;
-        const baseRow = Math.max(hillBase, Math.round(t.y * nRows));
-        return {
-            col,
-            baseRow,
-            topRow: baseRow - Math.round(t.h * (nRows / 100)),
-            halfW: (t.w * (nCols / 300)) * 0.5
-        };
-    });
-
-    // Sun vector: low alpine sun from upper-left (NW)
-    const lx = -0.65, ly = -0.40, lz = 0.65;
-    const lLen = Math.sqrt(lx * lx + ly * ly + lz * lz);
-    const nlx = lx / lLen, nly = ly / lLen, nlz = lz / lLen;
-
-    // 4. Synthesize 2D Grid
     const grid = new Array(nRows);
     for (let r = 0; r < nRows; r++) {
-        const yn = r / nRows;
         const row = new Array(nCols);
+        const yn = r / nRows;
         for (let c = 0; c < nCols; c++) {
             const xn = c / nCols;
-
-            // A. Check Building
-            let inBldg = false;
-            let bldgCell = null;
-            for (let i = 0; i < buildings.length; i++) {
-                const b = buildings[i];
-                if (c >= b.c1 && c <= b.c2 && r >= b.rTop && r <= b.rBase) {
-                    inBldg = true;
-                    // Pitched snow roof (top 2 rows)
-                    if (r <= b.rTop + 1) {
-                        bldgCell = {
-                            fill: 1.0, lum: 0.95, isMtn: true, type: 'building_roof',
-                            color: 'rgb(246,250,255)'
-                        };
-                    } else {
-                        // Check Windows
-                        let isWin = false;
-                        for (let j = 0; j < b.windows.length; j++) {
-                            const w = b.windows[j];
-                            if (c >= w.c1 && c <= w.c2 && r >= w.r1 && r <= w.r2) {
-                                isWin = true; break;
-                            }
-                        }
-                        if (isWin) {
-                            // Warm glowing soft yellow window
-                            bldgCell = {
-                                fill: 1.0, lum: 1.0, isMtn: true, type: 'building_window',
-                                color: 'rgb(254,240,138)'
-                            };
-                        } else {
-                            // Dark timber chalet wall
-                            bldgCell = {
-                                fill: 0.45, lum: 0.35, isMtn: true, type: 'building_wall',
-                                color: 'rgb(30,41,59)'
-                            };
-                        }
-                    }
-                    break;
-                }
-            }
-            if (inBldg) {
-                row[c] = bldgCell;
-                continue;
-            }
-
-            // B. Check Pine Trees
-            let inTree = false;
-            let treeCell = null;
-            for (let i = 0; i < trees.length; i++) {
-                const tr = trees[i];
-                if (r >= tr.topRow && r <= tr.baseRow) {
-                    const prog = (r - tr.topRow) / Math.max(1, tr.baseRow - tr.topRow);
-                    const curW = prog * tr.halfW;
-                    if (Math.abs(c - tr.col) <= curW) {
-                        inTree = true;
-                        // Trunk at bottom center
-                        if (r >= tr.baseRow - 1 && Math.abs(c - tr.col) <= 0.7) {
-                            treeCell = {
-                                fill: 0.40, lum: 0.35, isMtn: true, type: 'tree',
-                                color: 'rgb(66,45,30)' // Timber bark
-                            };
-                        } else {
-                            // Conifer pine needles: sunlit emerald on left, deep spruce on right
-                            const isLit = (c <= tr.col);
-                            const shade = hash2(c, r);
-                            let tr_r, tr_g, tr_b;
-                            if (isLit) {
-                                tr_r = Math.round(28 + shade * 16);
-                                tr_g = Math.round(135 + shade * 45);
-                                tr_b = Math.round(62 + shade * 24);
-                            } else {
-                                tr_r = Math.round(16 + shade * 12);
-                                tr_g = Math.round(80 + shade * 30);
-                                tr_b = Math.round(42 + shade * 18);
-                            }
-                            tr_r = Math.round(tr_r / 6) * 6;
-                            tr_g = Math.round(tr_g / 6) * 6;
-                            tr_b = Math.round(tr_b / 6) * 6;
-                            treeCell = {
-                                fill: 0.65, lum: 0.60, isMtn: true, type: 'tree',
-                                color: 'rgb(' + tr_r + ',' + tr_g + ',' + tr_b + ')'
-                            };
-                        }
-                        break;
-                    }
-                }
-            }
-            if (inTree) {
-                row[c] = treeCell;
-                continue;
-            }
-
-            // C. Terrain Layers:
-            // Layer 3: Rolling Green Hills & Alpine Meadows (yn >= crest_hills)
-            // Layer 2: Midground Massif (yn >= crest_mid)
-            // Layer 1: High Alps Horns (yn >= crest_bg)
-            // Layer 0: Sky
-            let layer = 0;
-            let crest_y = 1.0;
-            if (yn >= crest_hills[c]) {
-                layer = 3; crest_y = crest_hills[c];
-            } else if (yn >= crest_mid[c]) {
-                layer = 2; crest_y = crest_mid[c];
-            } else if (yn >= crest_bg[c]) {
-                layer = 1; crest_y = crest_bg[c];
-            }
-
-            if (layer === 0) {
-                // Sky pixel: continuous atmospheric nocturnal matrix
+            // High alpine peak profile at x ~ 0.48
+            const peak = Math.exp(-Math.pow((xn - 0.48) * 4.5, 2.0)) * 0.42;
+            const crestY = 0.58 - peak;
+            if (yn < crestY) {
                 row[c] = {
                     fill: 0.0,
                     lum: 0.20,
                     isMtn: false,
                     type: 'sky',
-                    color: null // Evaluated dynamically via getSkyColor(yn, tokenIdx, r)
-                };
-                continue;
-            }
-
-            const depth = yn - crest_y;
-
-            if (layer === 3) {
-                // ROLLING GREEN HILLS & MEADOWS
-                const c_next = (c + 1) % nCols;
-                const c_prev = (c - 1 + nCols) % nCols;
-                const h_slope = (crest_hills[c_next] - crest_hills[c_prev]) * nCols * 0.5;
-                let nx = -h_slope * 0.25 + (noise2(xn * 40.0, yn * 25.0) - 0.5) * 0.35;
-                let ny = 0.70 + (noise2(xn * 20.0, yn * 40.0) - 0.5) * 0.25;
-                let nz = 0.70;
-                const nLen = Math.sqrt(nx * nx + ny * ny + nz * nz);
-                nx /= nLen; ny /= nLen; nz /= nLen;
-
-                const diff = Math.max(0.0, nx * nlx + ny * nly + nz * nlz);
-                const light = 0.25 + 0.75 * diff;
-
-                // Alpine grass: sunlit slopes are fresh moss / warm golden grass, hollows are deep pine green
-                let g_r = light * (22 + 40 * light);
-                let g_g = light * (100 + 75 * light);
-                let g_b = light * (42 + 25 * light);
-
-                // Lantern glow spill from cabin windows onto surrounding meadow
-                let maxGlow = 0;
-                for (let i = 0; i < buildings.length; i++) {
-                    const b = buildings[i];
-                    for (let j = 0; j < b.windows.length; j++) {
-                        const w = b.windows[j];
-                        const dw = Math.hypot((c - (w.c1 + w.c2) * 0.5) / 5.5, (r - (w.r1 + w.r2) * 0.5) / 3.0);
-                        if (dw < 6.5) {
-                            const glow = Math.max(0.0, 1.0 - dw / 6.5) * 0.75;
-                            if (glow > maxGlow) maxGlow = glow;
-                        }
-                    }
-                }
-                if (maxGlow > 0) {
-                    g_r = g_r * (1.0 - maxGlow) + 254 * maxGlow;
-                    g_g = g_g * (1.0 - maxGlow) + 230 * maxGlow;
-                    g_b = g_b * (1.0 - maxGlow) + 90 * maxGlow;
-                } else {
-                    // Occasional soft golden alpine wildflower
-                    const flowerH = hash2(c * 17, r * 31);
-                    if (flowerH < 0.05 && light > 0.45) {
-                        g_r = 250; g_g = 204; g_b = 21;
-                    }
-                }
-
-                const qr = Math.min(255, Math.max(0, Math.round(g_r / 6) * 6));
-                const qg = Math.min(255, Math.max(0, Math.round(g_g / 6) * 6));
-                const qb = Math.min(255, Math.max(0, Math.round(g_b / 6) * 6));
-
-                row[c] = {
-                    fill: Math.max(0.0, Math.min(1.0, 0.40 + light * 0.35)),
-                    lum: light,
-                    isMtn: true,
-                    type: 'meadow',
-                    color: 'rgb(' + qr + ',' + qg + ',' + qb + ')'
+                    glyphSet: SKY_CHARS,
+                    color: getSkyColor(yn, c, r)
                 };
             } else {
-                // ALPINE MOUNTAINS (Alps Horns & Massif)
-                const slant = layer === 1 ? 1.3 : 1.6;
-                const rib = ridged2(xn * 18.0 + depth * slant, yn * 10.0 + layer * 7.0, 4);
-                const couloir = noise2(xn * 35.0, yn * 20.0);
-                const strata = fbm2(xn * 15.0, yn * 18.0, 3);
-
-                const c_next = (c + 1) % nCols;
-                const c_prev = (c - 1 + nCols) % nCols;
-                const cur_crest = (layer === 2) ? crest_mid : crest_bg;
-                const crest_slope = (cur_crest[c_next] - cur_crest[c_prev]) * nCols * 0.5;
-
-                let nx = -crest_slope * 0.16 + (rib - 0.5) * 0.70 + (couloir - 0.5) * 0.25;
-                let ny = 0.55 + (strata - 0.5) * 0.35;
-                let nz = 0.85 + (1.0 - Math.min(1.0, depth * 2.5)) * 0.35;
-
-                const nLen = Math.sqrt(nx * nx + ny * ny + nz * nz);
-                nx /= nLen; ny /= nLen; nz /= nLen;
-
-                const diff = Math.max(0.0, nx * nlx + ny * nly + nz * nlz);
-                const light = 0.18 + 0.82 * diff;
-
-                const alt_factor = Math.max(0.0, 1.0 - yn * 1.6);
-                const crest_factor = Math.max(0.0, 1.0 - depth * (layer === 1 ? 3.5 : 4.8));
-                const shelf_factor = Math.max(0.0, (ny - 0.35) / 0.5);
-                const gully_snow = Math.max(0.0, (couloir - 0.50) * 1.5);
-
-                let snow_amt = crest_factor * 0.65 + alt_factor * 0.20 + shelf_factor * 0.15 + gully_snow * 0.15;
-                if (Math.abs(nx) > 0.80) {
-                    snow_amt *= 0.30;
-                }
-                snow_amt = Math.max(0.0, Math.min(1.0, snow_amt));
-
-                const haze = layer === 1 ? 0.28 : 0.12;
-
-                const snow_r = 160 + 95 * light;
-                const snow_g = 210 + 45 * light;
-                const snow_b = 255;
-
-                const rock_r = 12 + 44 * light;
-                const rock_g = 28 + 155 * light;
-                const rock_b = 75 + 170 * light;
-
-                let r_col = rock_r * (1.0 - snow_amt) + snow_r * snow_amt;
-                let g_col = rock_g * (1.0 - snow_amt) + snow_g * snow_amt;
-                let b_col = rock_b * (1.0 - snow_amt) + snow_b * snow_amt;
-
-                r_col = r_col * (1.0 - haze) + 16 * haze;
-                g_col = g_col * (1.0 - haze) + 48 * haze;
-                b_col = b_col * (1.0 - haze) + 125 * haze;
-
-                const qr = Math.min(255, Math.max(0, Math.round(r_col / 6) * 6));
-                const qg = Math.min(255, Math.max(0, Math.round(g_col / 6) * 6));
-                const qb = Math.min(255, Math.max(0, Math.round(b_col / 6) * 6));
-
+                const isSnow = yn < crestY + 0.12;
                 row[c] = {
-                    fill: Math.max(0.0, Math.min(1.0, snow_amt * 0.72 + light * 0.28)),
-                    lum: light,
+                    fill: isSnow ? 1.0 : 0.4,
+                    lum: isSnow ? 0.9 : 0.3,
                     isMtn: true,
-                    type: 'mountain',
-                    color: 'rgb(' + qr + ',' + qg + ',' + qb + ')'
+                    type: isSnow ? 'snow' : 'mountain',
+                    glyphSet: isSnow ? SNOW_CHARS : SLOPE_CHARS,
+                    color: isSnow ? 'rgb(240, 248, 255)' : 'rgb(56, 189, 248)'
                 };
             }
         }
@@ -581,13 +178,11 @@ function buildMountainGrid(nRows, nCols) {
 }
 
 // -------------------------------------------------------------
-// IMAGE-DRIVEN PHOTOREALISTIC REFERENCE MODEL WITH PROCEDURAL FALLBACK
+// IMAGE-DRIVEN PHOTOREALISTIC REFERENCE MODEL
 // -------------------------------------------------------------
 
-const COASTAL_IMAGE_SRC = '/coastal-reference.webp';
 const ALPINE_IMAGE_SRC = '/alpine-reference.webp';
 let alpineImage = null;
-let alpineImageLoaded = false;
 
 function getAlpineImage() {
     const el = document.getElementById('alpine-reference-img');
@@ -596,18 +191,26 @@ function getAlpineImage() {
     return null;
 }
 
+function onAlpineImageReady(img) {
+    if (numRows > 0 && numCols > 0) {
+        mountainGrid = buildGridFromImage(img, numRows, numCols);
+        if (maskCanvas) buildMaskCanvas();
+    }
+}
+
 function loadAlpineImage() {
+    const el = document.getElementById('alpine-reference-img');
+    if (el) {
+        if (el.complete && el.naturalWidth > 0) {
+            onAlpineImageReady(el);
+        } else {
+            el.addEventListener('load', () => onAlpineImageReady(el));
+        }
+        return;
+    }
     if (typeof Image === 'undefined') return;
     alpineImage = new Image();
-    alpineImage.onload = () => {
-        alpineImageLoaded = true;
-        if (numRows > 0 && numCols > 0) {
-            mountainGrid = buildGridFromImage(alpineImage, numRows, numCols);
-        }
-    };
-    alpineImage.onerror = () => {
-        alpineImageLoaded = false;
-    };
+    alpineImage.onload = () => onAlpineImageReady(alpineImage);
     alpineImage.src = ALPINE_IMAGE_SRC;
 }
 loadAlpineImage();
@@ -616,6 +219,7 @@ window.addEventListener('load', () => {
     const imgEl = getAlpineImage();
     if (imgEl && numRows > 0 && numCols > 0) {
         mountainGrid = buildGridFromImage(imgEl, numRows, numCols);
+        if (maskCanvas) buildMaskCanvas();
     }
 });
 
@@ -751,7 +355,8 @@ function buildGridFromImage(img, nRows, nCols) {
                     lum: 0.20,
                     isMtn: false,
                     type: 'sky',
-                    color: null // Evaluated dynamically via getSkyColor(yn, c, r)
+                    glyphSet: SKY_CHARS,
+                    color: getSkyColor(r / nRows, c, r)
                 };
                 continue;
             }
@@ -771,19 +376,20 @@ function buildGridFromImage(img, nRows, nCols) {
             let qb = Math.min(255, Math.round(blue / 6) * 6);
 
             let type = 'mountain';
+            let glyphSet = SLOPE_CHARS;
             let fill = lum;
 
             if (isAlpenglow) {
                 type = 'alpenglow';
+                glyphSet = ALPENGLOW_CHARS;
                 fill = 1.0;
-                // Brilliant golden alpenglow amber
                 qr = 254;
                 qg = 222;
                 qb = Math.min(95, qb);
             } else if (lum >= 0.32) {
                 type = 'snow'; // Pristine glacial snowfields and cirques
+                glyphSet = SNOW_CHARS;
                 fill = Math.min(1.0, lum * 1.35);
-                // Boost snow brightness & glacial ice-blue tint
                 qr = Math.min(255, Math.round(red * 1.25 + 28));
                 qg = Math.min(255, Math.round(green * 1.22 + 32));
                 qb = Math.min(255, Math.max(Math.round(blue * 1.18 + 32), 195));
@@ -794,18 +400,21 @@ function buildGridFromImage(img, nRows, nCols) {
                 }
             } else if (green > red * 1.08 && green > blue * 0.88 && lum < 0.35) {
                 type = 'tree'; // Deep spruce pine forest at base
+                glyphSet = TREE_CHARS;
                 fill = 0.55;
                 qr = Math.round(red * 0.75);
                 qg = Math.min(255, Math.round(green * 1.25 + 10));
                 qb = Math.round(blue * 0.75);
             } else if (lum < 0.14) {
-                type = 'shadow'; // Deep rock crevices & couloir shadows (negative space)
+                type = 'shadow'; // Deep rock crevices & couloir shadows
+                glyphSet = SHADOW_CHARS;
                 fill = 0.10;
                 qr = Math.max(16, qr);
                 qg = Math.max(26, qg);
                 qb = Math.max(48, qb);
             } else {
                 type = 'mountain'; // Craggy slate rock faces
+                glyphSet = SLOPE_CHARS;
                 fill = Math.max(0.20, lum);
                 qr = Math.max(28, qr);
                 qg = Math.max(44, qg);
@@ -817,6 +426,7 @@ function buildGridFromImage(img, nRows, nCols) {
                 lum,
                 isMtn: true,
                 type,
+                glyphSet,
                 color: 'rgb(' + qr + ',' + qg + ',' + qb + ')'
             };
         }
@@ -997,6 +607,7 @@ function renderFrame(time) {
         const minI = Math.floor((-charWidth - offset) / charWidth);
         const maxI = Math.ceil((width + charWidth - offset) / charWidth);
 
+        let lastColor = '';
         for (let i = minI; i <= maxI; i++) {
             const screenX = i * charWidth + offset;
             if (screenX < headMinX || screenX > headMaxX) continue;
@@ -1010,40 +621,36 @@ function renderFrame(time) {
             const col = Math.floor(normX * numCols);
             const wrappedCol = ((col % numCols) + numCols) % numCols;
             const mtnPix = mountainGrid[r][wrappedCol];
+            const targetColor = mtnPix.color;
 
-            // Target color: mountain color if in mountain, otherwise atmospheric nocturnal sky color
-            const targetColor = mtnPix.isMtn
-                ? mtnPix.color
-                : getSkyColor(r / numRows, wrappedCol, r);
-
-            let charToDraw = ' ';
-            let charColor = targetColor;
+            let charToDraw;
+            let charColor;
 
             if (row.isInstLine) {
                 // RISC-V Instruction Line (strictly reads forward left-to-right)
-                const charIdx = ((tokenIdx % row.charStream.length) + row.charStream.length) % row.charStream.length;
-                const instChar = row.charStream[charIdx];
-                if (instChar === ' ') continue;
+                const len = row.charStream.length;
+                let charIdx = tokenIdx % len;
+                if (charIdx < 0) charIdx += len;
+                charToDraw = row.charStream[charIdx];
+                if (charToDraw === ' ') continue;
 
                 if (lineReveal < 1.0) {
-                    // Initial random matrix phase
-                    const noiseIdx = ((tokenIdx % row.noiseColors.length) + row.noiseColors.length) % row.noiseColors.length;
+                    const noiseLen = row.noiseColors.length;
+                    let noiseIdx = tokenIdx % noiseLen;
+                    if (noiseIdx < 0) noiseIdx += noiseLen;
                     charColor = (lineReveal > 0.5) ? targetColor : row.noiseColors[noiseIdx];
-                    charToDraw = instChar;
                 } else {
-                    // Fully formed: instructions flow through sky and mountain, illuminated by contours
                     charColor = targetColor;
-                    charToDraw = instChar;
                 }
             } else {
                 // Binary Matrix Lines: diverse character selection
                 const finalGlyph = pickGlyph(tokenIdx, r, mtnPix);
 
                 if (lineReveal < 1.0) {
-                    // Initial random binary phase
-                    const noiseIdx = ((tokenIdx % row.noiseColors.length) + row.noiseColors.length) % row.noiseColors.length;
-                    const bitMod = ((tokenIdx % 2) + 2) % 2;
-                    charToDraw = bitMod === 0 ? '1' : '0';
+                    const noiseLen = row.noiseColors.length;
+                    let noiseIdx = tokenIdx % noiseLen;
+                    if (noiseIdx < 0) noiseIdx += noiseLen;
+                    charToDraw = (tokenIdx & 1) === 0 ? '1' : '0';
                     charColor = row.noiseColors[noiseIdx];
 
                     // Deterministic progressive crystallization into mountain/sky
@@ -1053,7 +660,6 @@ function renderFrame(time) {
                         charColor = targetColor;
                     }
                 } else {
-                    // Fully formed atmospheric snowy mountain & digital sky
                     charToDraw = finalGlyph;
                     charColor = targetColor;
                 }
@@ -1062,8 +668,10 @@ function renderFrame(time) {
             if (charToDraw === ' ') continue;
 
             // Render each character cell at its exact integer physical pixel coordinate
-            // Completely eliminates string seam jitter, character collisions, and brightness oscillation
-            targetCtx.fillStyle = charColor;
+            // Minimize Canvas 2D state changes by caching fillStyle
+            if (lastColor !== charColor) {
+                targetCtx.fillStyle = lastColor = charColor;
+            }
             targetCtx.fillText(charToDraw, screenX, rowY);
         }
     }
