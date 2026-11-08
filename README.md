@@ -14,7 +14,7 @@ This repository contains the source and zero-dependency Python static build scri
 │   │   └── index.html       # Single-page program portal (About, Projects, Updates, Contact)
 │   └── static/
 │       ├── CNAME                  # Custom domain configuration (diodesign.org)
-│       ├── alpine-reference.webp  # High-contrast alpine massif reference map for matrix stream
+│       ├── background.webp        # Photorealistic background reference map for matrix stream (auto-generates _site/mask.webp during build)
 │       ├── splash.js              # Accordion UI controller, sideways matrix rain mountain generator & RISC-V explorer
 │       ├── style.css              # Responsive single-page styles
 │       ├── favicon.ico
@@ -32,7 +32,7 @@ This repository contains the source and zero-dependency Python static build scri
 
 ## Requirements
 
-- **Python 3** (uses only the Python standard library; no third-party packages are required).
+- **Python 3** (requires `Pillow` to auto-generate the mask during build, installed automatically by `pip install -r requirements.txt` in CI/CD).
 
 ## Build and Local Development
 

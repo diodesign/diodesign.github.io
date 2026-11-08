@@ -2,6 +2,7 @@ import argparse
 from datetime import datetime, timezone
 import http.server
 import json
+import math
 import os
 import re
 import shutil
@@ -10,6 +11,12 @@ import subprocess
 import sys
 import threading
 import time
+
+try:
+    from PIL import Image, ImageFilter
+    HAS_PIL = True
+except ImportError:
+    HAS_PIL = False
 
 # Configuration
 TEMPLATES_DIR = 'src/templates'
@@ -115,6 +122,68 @@ def get_last_updated_date():
     return datetime.now(timezone.utc).strftime('%b %d, %Y')
 
 
+def generate_mask(background_path, output_path):
+    """Auto-generates a continuous panoramic transparency mask from the background reference image."""
+    if not os.path.exists(background_path):
+        return
+
+    if not HAS_PIL:
+        print(f"Warning: Pillow not installed. Skipping auto-generating {output_path}.")
+        return
+
+    ref = Image.open(background_path).convert('RGB')
+    w, h = ref.size
+    pixels = ref.load()
+    mask_bytes = bytearray(w * h)
+
+    for y in range(h):
+        yn = y / h
+        for x in range(w):
+            # Vertical panoramic atmospheric profile:
+            # - Upper sky / atmosphere (yn < 0.22): subtle cosmic code rain (0.20 -> 0.32)
+            # - Hero focal zone (0.22 <= yn < 0.55): peak vibrancy (0.45 -> 0.65)
+            # - Lower slope rolloff (0.55 <= yn < 0.82): smooth cosine falloff to 0.0
+            # - Base anchor (yn >= 0.82): 0.0
+            if yn < 0.22:
+                base_v = 0.20 + (yn / 0.22) * 0.12
+            elif yn < 0.55:
+                t = (yn - 0.22) / (0.55 - 0.22)
+                base_v = 0.32 + math.sin(t * math.pi) * 0.28
+            elif yn < 0.82:
+                t = (yn - 0.55) / (0.82 - 0.55)
+                base_v = 0.38 * (0.5 + 0.5 * math.cos(t * math.pi))
+            else:
+                base_v = 0.0
+
+            # Content-aware highlight modulation:
+            # Highlighted landscape features (sunlight, snow, city lights, stars)
+            # receive a proportional lift in the hero zone
+            if base_v > 0.0:
+                r, g, b = pixels[x, y]
+                lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255.0
+                if yn < 0.60:
+                    base_v += lum * 0.16
+
+            # Horizontal edge vignette: smooth cosine feathering at left/right boundaries (~5.5% width)
+            edge_w = max(40, int(w * 0.055))
+            if x < edge_w:
+                base_v *= (0.5 - 0.5 * math.cos((x / edge_w) * math.pi))
+            elif x > w - edge_w:
+                base_v *= (0.5 - 0.5 * math.cos(((w - x) / edge_w) * math.pi))
+
+            alpha = max(0.0, min(0.75, base_v))
+            mask_bytes[y * w + x] = int(round(alpha * 255.0))
+
+    mask_raw = Image.frombytes('L', (w, h), bytes(mask_bytes))
+    blur_radius = max(4, w // 160)
+    mask_smooth = mask_raw.filter(ImageFilter.GaussianBlur(radius=blur_radius))
+
+    white = Image.new('L', (w, h), 255)
+    mask_rgba = Image.merge('RGBA', (white, white, white, mask_smooth))
+    mask_rgba.save(output_path, 'WEBP', quality=95)
+    print(f"Generated {output_path} ({w}x{h}) from {background_path}")
+
+
 def build_site():
     """Builds the complete single-page site into _site/."""
     prepare_output_directory()
@@ -142,6 +211,11 @@ def build_site():
             else:
                 shutil.copy2(s, d)
         print(f"Copied static assets from {STATIC_DIR} to {OUTPUT_DIR}")
+
+    # Auto-generate mask into _site/ from static background reference image
+    bg_path = os.path.join(STATIC_DIR, 'background.webp')
+    mask_out_path = os.path.join(OUTPUT_DIR, 'mask.webp')
+    generate_mask(bg_path, mask_out_path)
 
     generate_sitemap()
     generate_llms_txt()

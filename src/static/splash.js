@@ -191,80 +191,82 @@ function buildMountainGrid(nRows, nCols) {
 // IMAGE-DRIVEN PHOTOREALISTIC REFERENCE MODEL
 // -------------------------------------------------------------
 
-const ALPINE_IMAGE_SRC = '/alpine-reference.webp';
-let alpineImage = null;
+const BACKGROUND_IMAGE_SRC = '/background.webp';
+let backgroundImage = null;
 
-const ALPINE_MASK_SRC = '/alpine-mask.webp';
-let alpineMaskImage = null;
+const MASK_IMAGE_SRC = '/mask.webp';
+let maskImage = null;
 
-function getAlpineImage() {
-    const el = document.getElementById('alpine-reference-img');
+function getBackgroundImage() {
+    const el = document.getElementById('background-img') || document.getElementById('alpine-reference-img');
     if (el && el.complete && el.naturalWidth > 0) return el;
-    if (alpineImage && alpineImage.complete && alpineImage.naturalWidth > 0) return alpineImage;
+    if (backgroundImage && backgroundImage.complete && backgroundImage.naturalWidth > 0) return backgroundImage;
     return null;
 }
+const getAlpineImage = getBackgroundImage;
 
-function getAlpineMaskImage() {
-    const el = document.getElementById('alpine-mask-img');
+function getMaskImage() {
+    const el = document.getElementById('mask-img') || document.getElementById('alpine-mask-img');
     if (el && el.complete && el.naturalWidth > 0) return el;
-    if (alpineMaskImage && alpineMaskImage.complete && alpineMaskImage.naturalWidth > 0) return alpineMaskImage;
+    if (maskImage && maskImage.complete && maskImage.naturalWidth > 0) return maskImage;
     return null;
 }
+const getAlpineMaskImage = getMaskImage;
 
-function onAlpineMaskReady() {
+function onMaskReady() {
     if (maskCanvas && width > 0 && height > 0) {
         buildMaskCanvas();
     }
 }
 
-function loadAlpineMaskImage() {
-    const el = document.getElementById('alpine-mask-img');
+function loadMaskImage() {
+    const el = document.getElementById('mask-img') || document.getElementById('alpine-mask-img');
     if (el) {
         if (el.complete && el.naturalWidth > 0) {
-            onAlpineMaskReady();
+            onMaskReady();
         } else {
-            el.addEventListener('load', onAlpineMaskReady);
+            el.addEventListener('load', onMaskReady);
         }
         return;
     }
     if (typeof Image === 'undefined') return;
-    alpineMaskImage = new Image();
-    alpineMaskImage.onload = onAlpineMaskReady;
-    alpineMaskImage.src = ALPINE_MASK_SRC;
+    maskImage = new Image();
+    maskImage.onload = onMaskReady;
+    maskImage.src = MASK_IMAGE_SRC;
 }
-loadAlpineMaskImage();
+loadMaskImage();
 
-function onAlpineImageReady(img) {
+function onBackgroundImageReady(img) {
     if (numRows > 0 && numCols > 0) {
         mountainGrid = buildGridFromImage(img, numRows, numCols);
         if (maskCanvas) buildMaskCanvas();
     }
 }
 
-function loadAlpineImage() {
-    const el = document.getElementById('alpine-reference-img');
+function loadBackgroundImage() {
+    const el = document.getElementById('background-img') || document.getElementById('alpine-reference-img');
     if (el) {
         if (el.complete && el.naturalWidth > 0) {
-            onAlpineImageReady(el);
+            onBackgroundImageReady(el);
         } else {
-            el.addEventListener('load', () => onAlpineImageReady(el));
+            el.addEventListener('load', () => onBackgroundImageReady(el));
         }
         return;
     }
     if (typeof Image === 'undefined') return;
-    alpineImage = new Image();
-    alpineImage.onload = () => onAlpineImageReady(alpineImage);
-    alpineImage.src = ALPINE_IMAGE_SRC;
+    backgroundImage = new Image();
+    backgroundImage.onload = () => onBackgroundImageReady(backgroundImage);
+    backgroundImage.src = BACKGROUND_IMAGE_SRC;
 }
-loadAlpineImage();
+loadBackgroundImage();
 
 window.addEventListener('load', () => {
-    const imgEl = getAlpineImage();
+    const imgEl = getBackgroundImage();
     if (imgEl && numRows > 0 && numCols > 0) {
         mountainGrid = buildGridFromImage(imgEl, numRows, numCols);
         if (maskCanvas) buildMaskCanvas();
     }
-    const maskEl = getAlpineMaskImage();
+    const maskEl = getMaskImage();
     if (maskEl && maskCanvas) {
         buildMaskCanvas();
     }
@@ -538,7 +540,7 @@ function buildMaskCanvas() {
     if (!maskCtx || width === 0 || height === 0) return;
     maskCtx.clearRect(0, 0, width, height);
 
-    const maskImg = getAlpineMaskImage();
+    const maskImg = getMaskImage();
     if (maskImg && photoCrop.sw > 0) {
         // High-performance hardware-accelerated mask blit co-registered to photoCrop
         maskCtx.drawImage(
@@ -664,7 +666,7 @@ function renderFrame(time) {
     const elapsed = (time - animStartTime - totalPausedDuration) / 1000;
 
     // 1. Render reference photograph behind the code rain (exact 1:1 scale & crop)
-    const imgEl = getAlpineImage();
+    const imgEl = getBackgroundImage();
     if (imgEl && photoCrop.sw > 0) {
         ctx.drawImage(imgEl, photoCrop.sx, photoCrop.sy, photoCrop.sw, photoCrop.sh, 0, 0, width, height);
         // Atmospheric twilight grading over photo so colors harmonize with diodesign palette
@@ -954,7 +956,7 @@ function resizeAndRebuild() {
     numCols = Math.round(width / charWidth);
 
     // Synthesize 2D alpine pixel array (image-driven with procedural fallback)
-    const imgEl = getAlpineImage();
+    const imgEl = getBackgroundImage();
     if (imgEl) {
         mountainGrid = buildGridFromImage(imgEl, numRows, numCols);
     } else {
