@@ -100,6 +100,8 @@ let height = 0;
 let rafId = null;
 let animStartTime = 0;
 let lastFrameTime = 0;
+let motionTime = 0;
+let lastMotionTime = 0;
 let pausedAt = 0;
 let totalPausedDuration = 0;
 const FRAME_INTERVAL = 1000 / 30;
@@ -186,12 +188,7 @@ function pickGlyph(tokenIdx, rowIdx, mtnPix) {
 }
 
 // Atmospheric digital sky color model: fills top half with luminous nocturnal code rain blues
-function getSkyColor(yn, colIdx, rowIdx) {
-    // Subtle glowing star pinned to fixed sky column/row coordinates (never blinks with time or scrolling)
-    const h = hashInt((colIdx * 137) ^ (rowIdx * 313));
-    if (h < 0.035) {
-        return 'rgba(186, 230, 253, 0.95)'; // Brilliant ice-cyan star
-    }
+function getSkyColor(yn) {
     // Smooth atmospheric nocturnal twilight gradient
     if (yn <= 0.12) {
         return 'rgba(23, 37, 84, 0.75)'; // Deep midnight navy
@@ -219,13 +216,19 @@ function buildMountainGrid(nRows, nCols) {
             const peak = Math.exp(-Math.pow((xn - 0.48) * 4.5, 2.0)) * 0.42;
             const crestY = 0.58 - peak;
             if (yn < crestY) {
+                const starHash = hashInt((c * 137) ^ (r * 313));
+                const isStar = (starHash < 0.025);
+                const starGlyphs = ['.', '·', '*', '+', '.'];
+                const starGlyph = starGlyphs[Math.floor(starHash * 200) % starGlyphs.length];
                 row[c] = {
                     fill: 0.0,
                     lum: 0.20,
                     isMtn: false,
+                    isStar,
+                    starGlyph,
                     type: 'sky',
                     glyphSet: SKY_CHARS,
-                    color: getSkyColor(yn, c, r)
+                    color: isStar ? 'rgba(186, 230, 253, 0.95)' : getSkyColor(yn)
                 };
             } else {
                 const isSnow = yn < crestY + 0.12;
@@ -471,13 +474,20 @@ function buildGridFromImage(img, nRows, nCols) {
         for (let c = 0; c < nCols; c++) {
             // Sky detection: strictly and cleanly above the continuous mountain crest
             if (r < crestRow[c]) {
+                const yn = r / nRows;
+                const starHash = hashInt((c * 137) ^ (r * 313));
+                const isStar = (starHash < 0.025);
+                const starGlyphs = ['.', '·', '*', '+', '.'];
+                const starGlyph = starGlyphs[Math.floor(starHash * 200) % starGlyphs.length];
                 row[c] = {
                     fill: 0.0,
                     lum: 0.20,
                     isMtn: false,
+                    isStar,
+                    starGlyph,
                     type: 'sky',
                     glyphSet: SKY_CHARS,
-                    color: getSkyColor(r / nRows, c, r)
+                    color: isStar ? 'rgba(186, 230, 253, 0.95)' : getSkyColor(yn)
                 };
                 continue;
             }
@@ -582,8 +592,8 @@ function initStreamRows() {
         const isReverse = (r % 7 === 2 || r % 7 === 5);
         const direction = isReverse ? 1 : -1;
 
-        // Strictly constant scroll speed at 1/3 speed (40px/s to 64px/s): never accelerates or decelerates
-        const speed = (40 + ((r * 17) % 25)) * direction;
+        // Base scroll speed (48px/s to 75px/s): full speed during blur, smoothly ramps to quarter speed (12px/s to 19px/s) after blur
+        const speed = (48 + ((r * 19) % 28)) * direction;
 
         // Staggered start delay: lines start appearing in waves (0.0s to 2.2s)
         const startDelay = ((r * 23) % 29) * 0.075;
@@ -754,9 +764,14 @@ function renderFrame(time) {
 
     if (!animStartTime) animStartTime = time;
     const elapsed = (time - animStartTime - totalPausedDuration) / 1000;
+    const dt = lastMotionTime > 0 ? Math.max(0, Math.min(0.1, (time - lastMotionTime) / 1000)) : 0;
+    lastMotionTime = time;
 
-    // Progressive focus pull: strong blur dissolves to zero blur as streams traverse across the screen
+    // Progressive focus pull & synchronized speed transition:
+    // Full speed (1.0x) during blur hold & ramp, easing down in lockstep to quarter speed (0.25x) after blur.
     let blurAmount = 0.0;
+    let speedFactor = 0.25;
+
     if (elapsed < 9.0 && !reducedMotionQuery.matches) {
         let maxLtrDist = 0;
         let maxRtlDist = 0;
@@ -777,12 +792,19 @@ function renderFrame(time) {
         const progress = Math.min(1.0, totalTraveled / (2 * width));
         if (progress <= 0.25) {
             blurAmount = 1.0;
-        } else {
+            speedFactor = 1.0;
+        } else if (progress < 1.0) {
             const fadeRatio = (progress - 0.25) / 0.75;
             // Smooth cosine easing from 1.0 down to 0.0 across remaining 75%
             blurAmount = 0.5 + 0.5 * Math.cos(fadeRatio * Math.PI);
+            speedFactor = 0.25 + 0.75 * blurAmount;
+        } else {
+            blurAmount = 0.0;
+            speedFactor = 0.25;
         }
     }
+
+    motionTime += dt * speedFactor;
 
     // 1. Render reference photograph behind the code rain (exact 1:1 scale & crop)
     const imgEl = getBackgroundImage();
@@ -825,8 +847,8 @@ function renderFrame(time) {
         // Smooth transition over ~3.0s from initial random code rain binary to crystallized snowy mountain
         const lineReveal = Math.min(1.0, Math.max(0.0, (activeTime - 1.2) / 2.8));
 
-        // Horizontal scroll position (moves at strictly CONSTANT SPEED, monotonically in intended direction)
-        const offset = Math.round(row.initialOffset + row.speed * activeTime);
+        // Horizontal scroll position (moves at full speed during blur, smoothly easing to quarter speed after blur)
+        const offset = Math.round(row.initialOffset + row.speed * motionTime);
 
         // Leading head enters at constant speed across the screen (~3.2s to traverse 1440px)
         const headSpeed = 440 + ((r * 29) % 70);
@@ -882,7 +904,11 @@ function renderFrame(time) {
             let charToDraw;
             let charColor;
 
-            if (row.isInstLine) {
+            if (mtnPix && mtnPix.isStar) {
+                // Background celestial stars pinned to fixed screen coordinates (never flicker or change with scrolling)
+                charToDraw = mtnPix.starGlyph;
+                charColor = targetColor;
+            } else if (row.isInstLine) {
                 // RISC-V Instruction Line (strictly reads forward left-to-right)
                 const len = row.charStream.length;
                 let charIdx = tokenIdx % len;
@@ -984,6 +1010,7 @@ function startAnimation() {
         totalPausedDuration += performance.now() - pausedAt;
         pausedAt = 0;
     }
+    lastMotionTime = 0;
     if (!rafId && isAnimationActive()) {
         rafId = requestAnimationFrame(animate);
     }
@@ -1099,6 +1126,8 @@ function resizeAndRebuild() {
     if (maskCanvas) {
         buildMaskCanvas();
     }
+
+    lastMotionTime = 0;
 
     if (reducedMotionQuery.matches) {
         stopAnimation();
