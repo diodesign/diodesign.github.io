@@ -194,12 +194,45 @@ function buildMountainGrid(nRows, nCols) {
 const ALPINE_IMAGE_SRC = '/alpine-reference.webp';
 let alpineImage = null;
 
+const ALPINE_MASK_SRC = '/alpine-mask.webp';
+let alpineMaskImage = null;
+
 function getAlpineImage() {
     const el = document.getElementById('alpine-reference-img');
     if (el && el.complete && el.naturalWidth > 0) return el;
     if (alpineImage && alpineImage.complete && alpineImage.naturalWidth > 0) return alpineImage;
     return null;
 }
+
+function getAlpineMaskImage() {
+    const el = document.getElementById('alpine-mask-img');
+    if (el && el.complete && el.naturalWidth > 0) return el;
+    if (alpineMaskImage && alpineMaskImage.complete && alpineMaskImage.naturalWidth > 0) return alpineMaskImage;
+    return null;
+}
+
+function onAlpineMaskReady() {
+    if (maskCanvas && width > 0 && height > 0) {
+        buildMaskCanvas();
+    }
+}
+
+function loadAlpineMaskImage() {
+    const el = document.getElementById('alpine-mask-img');
+    if (el) {
+        if (el.complete && el.naturalWidth > 0) {
+            onAlpineMaskReady();
+        } else {
+            el.addEventListener('load', onAlpineMaskReady);
+        }
+        return;
+    }
+    if (typeof Image === 'undefined') return;
+    alpineMaskImage = new Image();
+    alpineMaskImage.onload = onAlpineMaskReady;
+    alpineMaskImage.src = ALPINE_MASK_SRC;
+}
+loadAlpineMaskImage();
 
 function onAlpineImageReady(img) {
     if (numRows > 0 && numCols > 0) {
@@ -230,6 +263,10 @@ window.addEventListener('load', () => {
     if (imgEl && numRows > 0 && numCols > 0) {
         mountainGrid = buildGridFromImage(imgEl, numRows, numCols);
         if (maskCanvas) buildMaskCanvas();
+    }
+    const maskEl = getAlpineMaskImage();
+    if (maskEl && maskCanvas) {
+        buildMaskCanvas();
     }
 });
 
@@ -506,7 +543,35 @@ function buildMaskCanvas() {
     if (!maskCtx || width === 0 || height === 0) return;
     maskCtx.clearRect(0, 0, width, height);
 
-    // Large graduated radial apertures positioned over scenic alpine features:
+    const maskImg = getAlpineMaskImage();
+    if (maskImg && photoCrop.sw > 0) {
+        // High-performance hardware-accelerated mask blit co-registered to photoCrop
+        maskCtx.drawImage(
+            maskImg,
+            photoCrop.sx, photoCrop.sy, photoCrop.sw, photoCrop.sh,
+            0, 0, width, height
+        );
+
+        // Precompute active row ranges based on alpine-mask.webp non-zero footprint:
+        // photoX spans [80, 1170] and photoY spans [35, 640]
+        const minX = Math.max(0, Math.floor(((80 - photoCrop.sx) / photoCrop.sw) * width));
+        const maxX = Math.min(width, Math.ceil(((1170 - photoCrop.sx) / photoCrop.sw) * width));
+        const minY = Math.max(0, Math.floor(((35 - photoCrop.sy) / photoCrop.sh) * height));
+        const maxY = Math.min(height, Math.ceil(((640 - photoCrop.sy) / photoCrop.sh) * height));
+
+        maskRowRanges = new Array(numRows);
+        for (let r = 0; r < numRows; r++) {
+            const rowY = (streamRows && streamRows[r]) ? streamRows[r].y : Math.round(r * lineHeight);
+            if (rowY >= minY && rowY <= maxY && minX < maxX) {
+                maskRowRanges[r] = { minX, maxX };
+            } else {
+                maskRowRanges[r] = null;
+            }
+        }
+        return;
+    }
+
+    // Fallback: Large graduated radial apertures positioned over scenic alpine features:
     // Pinned dynamically to match underlying photograph coordinates under any aspect ratio
     const minDim = Math.min(width, height);
     const summitX = photoCrop.sw > 0
