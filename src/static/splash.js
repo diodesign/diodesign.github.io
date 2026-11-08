@@ -7,6 +7,21 @@ function setupAccordion() {
     if (!accordion) return;
 
     const items = Array.from(accordion.querySelectorAll('.accordion-item'));
+    const floatingPanel = document.getElementById('floating-panel');
+    const chipBtn = document.getElementById('riscv-chip-btn');
+    const explorerView = document.getElementById('riscv-explorer-view');
+
+    function collapseAllSubPanes() {
+        items.forEach((item) => {
+            if (item.classList.contains('active')) {
+                item.classList.remove('active');
+                const trigger = item.querySelector('.accordion-trigger');
+                if (trigger) {
+                    trigger.setAttribute('aria-expanded', 'false');
+                }
+            }
+        });
+    }
 
     items.forEach((item) => {
         const trigger = item.querySelector('.accordion-trigger');
@@ -32,6 +47,38 @@ function setupAccordion() {
                 trigger.blur();
             }
         });
+    });
+
+    // Collapse open sub-pane when clicking outside the main panel,
+    // except when the RISC-V ISA explorer is active.
+    let isPointerDownInsidePanel = false;
+    document.addEventListener('pointerdown', (e) => {
+        isPointerDownInsidePanel = Boolean(floatingPanel && floatingPanel.contains(e.target));
+    });
+
+    document.addEventListener('click', (e) => {
+        // Do not collapse if pointerdown originated inside the panel (e.g. text selection drag)
+        if (isPointerDownInsidePanel) return;
+
+        // Never collapse or close the RISC-V ISA explorer on outside click
+        if (explorerView && !explorerView.hidden) return;
+
+        // Ignore clicks on or inside the bottom-right RISC-V chip button
+        if (chipBtn && chipBtn.contains(e.target)) return;
+
+        // If clicking inside the main floating panel, leave sub-panes as-is
+        if (floatingPanel && floatingPanel.contains(e.target)) return;
+
+        // Click was outside the main panel: collapse any open accordion sub-pane
+        collapseAllSubPanes();
+    });
+
+    // Keyboard accessibility: Escape key collapses open sub-pane
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            if (explorerView && !explorerView.hidden) return;
+            collapseAllSubPanes();
+        }
     });
 }
 
