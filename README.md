@@ -26,7 +26,7 @@ This repository contains the source and Python static build script for **[diodes
 
 - **[`src/templates/`](src/templates/)**: Contains [`base.html`](src/templates/base.html) and [`index.html`](src/templates/index.html), which define the central program panel and its single-open expandable sections (*About*, *Projects*, *Updates*, and *Contact*).
 - **[`src/static/`](src/static/)**: Static assets copied directly to the root of `_site/` during the build.
-  - **[`splash.js`](src/static/splash.js)**: Controls the single-open accordion, drives the procedural sideways code rain and snowy alpine mountain range background generator on desktop/tablet screens (with adaptive hardware compute-power tier scaling and automatic bypass on screens `<= 768px`), and powers the interactive RISC-V instruction set and datapath explorer.
+  - **[`splash.js`](src/static/splash.js)**: Controls the single-open accordion, drives the procedural sideways code rain and snowy alpine mountain range background generator on desktop/tablet screens (with adaptive hardware compute-power tier scaling, startup micro-benchmark, dynamic child-pane CPU throttling, and automatic bypass on screens `<= 768px`), and powers the interactive RISC-V instruction set and datapath explorer.
   - **[`style.css`](src/static/style.css)**: Responsive layout and typography rules.
 - **[`build.py`](build.py)**: Compiles the templates, auto-generates the panoramic transparency mask (`mask.webp`), copies static assets into `_site/`, generates `sitemap.xml`, `llms.txt`, and `llms-full.txt`, and provides a local development server that rebuilds `_site/` automatically when source files are saved.
 
