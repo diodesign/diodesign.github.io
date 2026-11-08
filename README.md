@@ -1,16 +1,16 @@
 # diodesign.org
 
-This repository contains the source and zero-dependency Python static build script for **[diodesign.org](https://diodesign.org/)**, the single-page web portal for **the diodesign program**, hosted via GitHub Pages.
+This repository contains the source and Python static build script for **[diodesign.org](https://diodesign.org/)**, the single-page web portal for **the diodesign program**, hosted via GitHub Pages.
 
 ## Architecture
 
 ```text
 .
-├── build.py                 # Zero-dependency static site builder & local dev server
-├── requirements.txt         # Empty (uses Python 3 standard library only)
+├── build.py                 # Static site builder & local dev server
+├── requirements.txt         # Python dependencies (Pillow for mask generation)
 ├── src/
 │   ├── templates/
-│   │   ├── base.html        # Root HTML shell
+│   │   ├── base.html        # Root HTML shell with Schema.org JSON-LD & SEO metadata
 │   │   └── index.html       # Single-page program portal (About, Projects, Updates, Contact)
 │   └── static/
 │       ├── CNAME                  # Custom domain configuration (diodesign.org)
@@ -28,7 +28,7 @@ This repository contains the source and zero-dependency Python static build scri
 - **[`src/static/`](src/static/)**: Static assets copied directly to the root of `_site/` during the build.
   - **[`splash.js`](src/static/splash.js)**: Controls the single-open accordion, drives the procedural sideways code rain and snowy alpine mountain range background generator on desktop/tablet screens (with adaptive hardware compute-power tier scaling and automatic bypass on screens `<= 768px`), and powers the interactive RISC-V instruction set and datapath explorer.
   - **[`style.css`](src/static/style.css)**: Responsive layout and typography rules.
-- **[`build.py`](build.py)**: Compiles the templates, copies static assets into `_site/`, generates `sitemap.xml` and `llms.txt`, and provides a local development server that rebuilds `_site/` automatically when source files are saved.
+- **[`build.py`](build.py)**: Compiles the templates, auto-generates the panoramic transparency mask (`mask.webp`), copies static assets into `_site/`, generates `sitemap.xml`, `llms.txt`, and `llms-full.txt`, and provides a local development server that rebuilds `_site/` automatically when source files are saved.
 
 ## Requirements
 
@@ -67,8 +67,9 @@ This repository contains the source and zero-dependency Python static build scri
 
 The GitHub Actions workflow in [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) runs automatically on pushes to the `prod` branch:
 1. Sets up Python 3.
-2. Runs `python build.py` to compile the site into `./_site`.
-3. Uploads and deploys `./_site` to GitHub Pages.
+2. Installs dependencies (`pip install -r requirements.txt`).
+3. Runs `python build.py` to compile the site and generate assets into `./_site`.
+4. Uploads and deploys `./_site` to GitHub Pages.
 
 ---
 
