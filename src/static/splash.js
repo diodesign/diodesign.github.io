@@ -125,7 +125,7 @@ let charWidth = 6;
 let mountainGrid = null;
 let streamRows = [];
 
-// Authentic RV32I / RV64I instruction tokens & low-level systems assembly
+// Authentic RV32I / RV64I instruction tokens and old-school fortunes
 const RISCV_INSTRUCTION_CORPUS = [
     'addi a0, zero, 1; ',
     'lui sp, 0x80000; ',
@@ -148,7 +148,13 @@ const RISCV_INSTRUCTION_CORPUS = [
     'fence; ',
     '// zig hypervisor ',
     '#diodesign rv64gc ',
-    '0x80000000 -> 0x1000 '
+    'wear sunscreen',
+    'to err is human, but to really screw it up you need a computer... ',
+    'premature optimization is the root of all evil... ',
+    'never attribute to malice something adequately explained by stupidity... ',
+    '0x80000000 -> 0x1000 ',
+    "it's better to regret something you have done than regret something you haven't done... ",
+    "I thought what I'd do was, I'd pretend I was one of those deaf-mutes... "
 ];
 
 const CODE_RAIN_NOISE_PALETTE = [
@@ -558,6 +564,17 @@ function buildGridFromImage(img, nRows, nCols) {
 // -------------------------------------------------------------
 // HORIZONTAL CODE RAIN STREAM LINES
 // -------------------------------------------------------------
+function shuffleArray(array) {
+    const copy = array.slice();
+    for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const temp = copy[i];
+        copy[i] = copy[j];
+        copy[j] = temp;
+    }
+    return copy;
+}
+
 function initStreamRows() {
     streamRows = [];
     for (let r = 0; r < numRows; r++) {
@@ -574,13 +591,15 @@ function initStreamRows() {
         // Line type: ~35% stream authentic RISC-V instructions and systems tokens
         const isInstLine = (r % 3 === 1);
 
-        // Pre-build instruction stream string if it is an instruction line
+        // Pre-build instruction stream string with randomized order of instructions and easter eggs
         let charStream = '';
         if (isInstLine) {
-            let corpusIdx = (r * 3) % RISCV_INSTRUCTION_CORPUS.length;
-            while (charStream.length < 800) {
-                charStream += RISCV_INSTRUCTION_CORPUS[corpusIdx % RISCV_INSTRUCTION_CORPUS.length];
-                corpusIdx++;
+            while (charStream.length < 2400) {
+                const deck = shuffleArray(RISCV_INSTRUCTION_CORPUS);
+                for (const rawToken of deck) {
+                    const token = rawToken.endsWith(' ') ? rawToken : (rawToken + '; ');
+                    charStream += token;
+                }
             }
         }
 
