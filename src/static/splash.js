@@ -57,13 +57,17 @@ let pausedAt = 0;
 let totalPausedDuration = 0;
 const FRAME_INTERVAL = 1000 / 30;
 
-// Offscreen buffer canvases for code rain layer & radial transparency mask
+// Offscreen buffer canvases for code rain layer, radial transparency mask & focus pull
 let photoCrop = { sx: 0, sy: 0, sw: 0, sh: 0 };
 const rainCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
 const rainCtx = rainCanvas ? rainCanvas.getContext('2d') : null;
 const maskCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
 const maskCtx = maskCanvas ? maskCanvas.getContext('2d') : null;
 let maskRowRanges = null;
+
+const blurCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
+const blurCtx = blurCanvas ? blurCanvas.getContext('2d') : null;
+let isBlurReady = false;
 
 // Grid configuration
 let numRows = 100;
@@ -236,10 +240,29 @@ function loadMaskImage() {
 }
 loadMaskImage();
 
+function buildBlurCanvas(img) {
+    if (!blurCtx || !img || !img.complete || !img.naturalWidth || width === 0 || height === 0) return;
+    const bw = Math.max(1, Math.round(width * 0.5));
+    const bh = Math.max(1, Math.round(height * 0.5));
+    blurCanvas.width = bw;
+    blurCanvas.height = bh;
+
+    blurCtx.clearRect(0, 0, bw, bh);
+    if ('filter' in blurCtx) {
+        blurCtx.filter = 'blur(18px)';
+    }
+    blurCtx.drawImage(img, photoCrop.sx, photoCrop.sy, photoCrop.sw, photoCrop.sh, 0, 0, bw, bh);
+    if ('filter' in blurCtx) {
+        blurCtx.filter = 'none';
+    }
+    isBlurReady = true;
+}
+
 function onBackgroundImageReady(img) {
     if (numRows > 0 && numCols > 0) {
         mountainGrid = buildGridFromImage(img, numRows, numCols);
         if (maskCanvas) buildMaskCanvas();
+        buildBlurCanvas(img);
     }
 }
 
@@ -265,6 +288,7 @@ window.addEventListener('load', () => {
     if (imgEl && numRows > 0 && numCols > 0) {
         mountainGrid = buildGridFromImage(imgEl, numRows, numCols);
         if (maskCanvas) buildMaskCanvas();
+        buildBlurCanvas(imgEl);
     }
     const maskEl = getMaskImage();
     if (maskEl && maskCanvas) {
@@ -665,10 +689,43 @@ function renderFrame(time) {
     if (!animStartTime) animStartTime = time;
     const elapsed = (time - animStartTime - totalPausedDuration) / 1000;
 
+    // Progressive focus pull: strong blur dissolves to zero blur as opposing code rain wavefronts meet
+    let blurAmount = 0.0;
+    if (elapsed < 4.0 && !reducedMotionQuery.matches) {
+        let maxLtrX = 0;
+        let minRtlX = width;
+        for (let r = 0; r < numRows; r++) {
+            const row = streamRows[r];
+            if (!row || elapsed < row.startDelay) continue;
+            const activeTime = elapsed - row.startDelay;
+            const headSpeed = 440 + ((r * 29) % 70);
+            const headDist = headSpeed * activeTime;
+            if (row.direction > 0) {
+                if (headDist > maxLtrX) maxLtrX = headDist;
+            } else {
+                const rtlX = width - headDist;
+                if (rtlX < minRtlX) minRtlX = rtlX;
+            }
+        }
+        const sep = Math.max(0, minRtlX - maxLtrX);
+        const blurRatio = Math.min(1.0, sep / width);
+        // Smooth cosine easing from 1.0 down to 0.0 as streams overlap
+        blurAmount = 0.5 - 0.5 * Math.cos(blurRatio * Math.PI);
+    }
+
     // 1. Render reference photograph behind the code rain (exact 1:1 scale & crop)
     const imgEl = getBackgroundImage();
     if (imgEl && photoCrop.sw > 0) {
         ctx.drawImage(imgEl, photoCrop.sx, photoCrop.sy, photoCrop.sw, photoCrop.sh, 0, 0, width, height);
+
+        // While streams are converging, overlay softened blur layer with smoothly decaying alpha
+        if (blurAmount > 0.001 && isBlurReady && blurCanvas) {
+            ctx.save();
+            ctx.globalAlpha = blurAmount;
+            ctx.drawImage(blurCanvas, 0, 0, width, height);
+            ctx.restore();
+        }
+
         // Atmospheric twilight grading over photo so colors harmonize with diodesign palette
         ctx.fillStyle = 'rgba(2, 6, 23, 0.38)';
         ctx.fillRect(0, 0, width, height);
@@ -959,6 +1016,7 @@ function resizeAndRebuild() {
     const imgEl = getBackgroundImage();
     if (imgEl) {
         mountainGrid = buildGridFromImage(imgEl, numRows, numCols);
+        buildBlurCanvas(imgEl);
     } else {
         mountainGrid = buildMountainGrid(numRows, numCols);
     }
