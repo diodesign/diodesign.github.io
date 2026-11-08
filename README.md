@@ -14,8 +14,8 @@ This repository contains the source and zero-dependency Python static build scri
 │   │   └── index.html       # Single-page program portal (About, Projects, Updates, Contact)
 │   └── static/
 │       ├── CNAME                  # Custom domain configuration (diodesign.org)
-│       ├── background.webp        # Photorealistic background reference map for matrix stream (auto-generates _site/mask.webp during build)
-│       ├── splash.js              # Accordion UI controller, sideways matrix rain mountain generator & RISC-V explorer
+│       ├── background.webp        # Photorealistic background reference map for code rain stream (auto-generates _site/mask.webp during build)
+│       ├── splash.js              # Accordion UI controller, sideways code rain mountain generator & RISC-V explorer
 │       ├── style.css              # Responsive single-page styles
 │       ├── favicon.ico
 │       ├── humans.txt
@@ -26,7 +26,7 @@ This repository contains the source and zero-dependency Python static build scri
 
 - **[`src/templates/`](src/templates/)**: Contains [`base.html`](src/templates/base.html) and [`index.html`](src/templates/index.html), which define the central program panel and its single-open expandable sections (*About*, *Projects*, *Updates*, and *Contact*).
 - **[`src/static/`](src/static/)**: Static assets copied directly to the root of `_site/` during the build.
-  - **[`splash.js`](src/static/splash.js)**: Controls the single-open accordion, drives the procedural sideways matrix rain and snowy alpine mountain range background generator on desktop/tablet screens (automatically bypassed on screens `<= 768px`), and powers the interactive RISC-V instruction set and datapath explorer.
+  - **[`splash.js`](src/static/splash.js)**: Controls the single-open accordion, drives the procedural sideways code rain and snowy alpine mountain range background generator on desktop/tablet screens (automatically bypassed on screens `<= 768px`), and powers the interactive RISC-V instruction set and datapath explorer.
   - **[`style.css`](src/static/style.css)**: Responsive layout and typography rules.
 - **[`build.py`](build.py)**: Compiles the templates, copies static assets into `_site/`, generates `sitemap.xml` and `llms.txt`, and provides a local development server that rebuilds `_site/` automatically when source files are saved.
 

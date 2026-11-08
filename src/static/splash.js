@@ -36,7 +36,7 @@ function setupAccordion() {
 }
 
 // ============================================================================
-// 2. SIDEWAYS MATRIX RAIN & PROCEDURAL SNOWY MOUNTAIN GENERATOR
+// 2. SIDEWAYS CODE RAIN & PROCEDURAL SNOWY MOUNTAIN GENERATOR
 // ============================================================================
 
 const canvas = document.getElementById('splash-canvas');
@@ -104,7 +104,7 @@ const RISCV_INSTRUCTION_CORPUS = [
     '0x80000000 -> 0x1000 '
 ];
 
-const MATRIX_NOISE_PALETTE = [
+const CODE_RAIN_NOISE_PALETTE = [
     'rgba(30, 58, 138, 0.65)',
     'rgba(37, 99, 235, 0.75)',
     'rgba(2, 132, 199, 0.85)',
@@ -132,7 +132,7 @@ function pickGlyph(tokenIdx, rowIdx, mtnPix) {
     return (mtnPix && mtnPix.glyphSet) ? mtnPix.glyphSet[idx & 15] : SKY_CHARS[idx & 15];
 }
 
-// Atmospheric digital sky color model: fills top half with luminous nocturnal matrix blues
+// Atmospheric digital sky color model: fills top half with luminous nocturnal code rain blues
 function getSkyColor(yn, colIdx, rowIdx) {
     // Subtle glowing star pinned to fixed sky column/row coordinates (never blinks with time or scrolling)
     const h = hashInt((colIdx * 137) ^ (rowIdx * 313));
@@ -509,7 +509,7 @@ function buildGridFromImage(img, nRows, nCols) {
 }
 
 // -------------------------------------------------------------
-// HORIZONTAL MATRIX RAIN STREAM LINES
+// HORIZONTAL CODE RAIN STREAM LINES
 // -------------------------------------------------------------
 function initStreamRows() {
     streamRows = [];
@@ -537,10 +537,10 @@ function initStreamRows() {
             }
         }
 
-        // Noise palette seeds for initial random matrix rain phase
+        // Noise palette seeds for initial random code rain phase
         const noiseColors = [];
         for (let i = 0; i < 40; i++) {
-            noiseColors.push(MATRIX_NOISE_PALETTE[(r * 5 + i * 3) % MATRIX_NOISE_PALETTE.length]);
+            noiseColors.push(CODE_RAIN_NOISE_PALETTE[(r * 5 + i * 3) % CODE_RAIN_NOISE_PALETTE.length]);
         }
 
         streamRows.push({
@@ -634,7 +634,7 @@ function buildMaskCanvas() {
         { x: midX, y: midY, r: minDim * 0.34, maxA: 0.88 },
         // 4. Right mountain: Sunlit alpine massif & cirques
         { x: rightX, y: rightY, r: minDim * 0.40, maxA: 0.92 },
-        // 5. Atmospheric Sky Matrix
+        // 5. Atmospheric Digital Sky
         { x: width * 0.50, y: height * 0.10, r: minDim * 0.38, maxA: 0.85 }
     ];
 
@@ -752,7 +752,7 @@ function renderFrame(time) {
         if (!row || elapsed < row.startDelay) continue; // Line hasn't started appearing yet
 
         const activeTime = elapsed - row.startDelay;
-        // Smooth transition over ~3.0s from initial random matrix binary to crystallized snowy mountain
+        // Smooth transition over ~3.0s from initial random code rain binary to crystallized snowy mountain
         const lineReveal = Math.min(1.0, Math.max(0.0, (activeTime - 1.2) / 2.8));
 
         // Horizontal scroll position (moves at strictly CONSTANT SPEED, monotonically in intended direction)
@@ -836,7 +836,7 @@ function renderFrame(time) {
                     charColor = targetColor;
                 }
             } else {
-                // Binary Matrix Lines: diverse character selection
+                // Binary Code Rain Lines: diverse character selection
                 const finalGlyph = pickGlyph(tokenIdx, r, mtnPix);
 
                 if (lineReveal < 1.0) {
