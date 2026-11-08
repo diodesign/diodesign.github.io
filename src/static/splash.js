@@ -689,11 +689,11 @@ function renderFrame(time) {
     if (!animStartTime) animStartTime = time;
     const elapsed = (time - animStartTime - totalPausedDuration) / 1000;
 
-    // Progressive focus pull: strong blur dissolves to zero blur as opposing code rain wavefronts meet
+    // Progressive focus pull: strong blur dissolves to zero blur as streams traverse across the screen
     let blurAmount = 0.0;
-    if (elapsed < 4.0 && !reducedMotionQuery.matches) {
-        let maxLtrX = 0;
-        let minRtlX = width;
+    if (elapsed < 9.0 && !reducedMotionQuery.matches) {
+        let maxLtrDist = 0;
+        let maxRtlDist = 0;
         for (let r = 0; r < numRows; r++) {
             const row = streamRows[r];
             if (!row || elapsed < row.startDelay) continue;
@@ -701,15 +701,16 @@ function renderFrame(time) {
             const headSpeed = 440 + ((r * 29) % 70);
             const headDist = headSpeed * activeTime;
             if (row.direction > 0) {
-                if (headDist > maxLtrX) maxLtrX = headDist;
+                if (headDist > maxLtrDist) maxLtrDist = Math.min(width, headDist);
             } else {
-                const rtlX = width - headDist;
-                if (rtlX < minRtlX) minRtlX = rtlX;
+                if (headDist > maxRtlDist) maxRtlDist = Math.min(width, headDist);
             }
         }
-        const sep = Math.max(0, minRtlX - maxLtrX);
-        const blurRatio = Math.min(1.0, sep / width);
-        // Smooth cosine easing from 1.0 down to 0.0 as streams overlap
+        // Doubled blur time: transition runs across full traversal of opposing streams across the screen
+        const totalTraveled = maxLtrDist + maxRtlDist;
+        const remaining = Math.max(0, 2 * width - totalTraveled);
+        const blurRatio = Math.min(1.0, remaining / (2 * width));
+        // Smooth cosine easing from 1.0 down to 0.0 over doubled duration
         blurAmount = 0.5 - 0.5 * Math.cos(blurRatio * Math.PI);
     }
 
