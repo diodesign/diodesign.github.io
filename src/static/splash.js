@@ -523,31 +523,40 @@ function buildMaskCanvas() {
         ? ((380 - photoCrop.sy) / photoCrop.sh) * height
         : height * 0.52;
 
-    // Main mountain right flank & glacier cirque (photo x=760, y=360)
-    // Covers the central mountain's right shoulder/glaciers, terminating well before the far-right shard peak
-    const rightX = photoCrop.sw > 0
-        ? ((760 - photoCrop.sx) / photoCrop.sw) * width
-        : width * 0.60;
-    const rightY = photoCrop.sh > 0
+    // Mid-right glacier cirque & shoulder (photo x=780, y=360)
+    const midX = photoCrop.sw > 0
+        ? ((780 - photoCrop.sx) / photoCrop.sw) * width
+        : width * 0.62;
+    const midY = photoCrop.sh > 0
         ? ((360 - photoCrop.sy) / photoCrop.sh) * height
-        : height * 0.45;
+        : height * 0.48;
+
+    // Right mountain massif & sunlit alpenglow peaks (photo x=1030, y=280)
+    const rightX = photoCrop.sw > 0
+        ? ((1030 - photoCrop.sx) / photoCrop.sw) * width
+        : width * 0.82;
+    const rightY = photoCrop.sh > 0
+        ? ((280 - photoCrop.sy) / photoCrop.sh) * height
+        : height * 0.38;
 
     const circles = [
         // 1. Centerpiece: Towering alpine summit horn & knife-edge ridges
-        { x: summitX, y: summitY, r: minDim * 0.46, maxA: 0.98 },
+        { x: summitX, y: summitY, r: minDim * 0.48, maxA: 0.98 },
         // 2. Left flank: High ridges and cascading rock gullies
-        { x: leftX, y: leftY, r: minDim * 0.38, maxA: 0.90 },
-        // 3. Right flank: Glaciers, ridges, and valley
-        { x: rightX, y: rightY, r: minDim * 0.36, maxA: 0.92 },
-        // 4. Atmospheric Sky Matrix
-        { x: summitX, y: height * 0.10, r: minDim * 0.34, maxA: 0.85 }
+        { x: leftX, y: leftY, r: minDim * 0.40, maxA: 0.90 },
+        // 3. Mid-right glacier cirque connecting center and right
+        { x: midX, y: midY, r: minDim * 0.34, maxA: 0.88 },
+        // 4. Right mountain: Sunlit alpine massif & cirques
+        { x: rightX, y: rightY, r: minDim * 0.40, maxA: 0.92 },
+        // 5. Atmospheric Sky Matrix
+        { x: width * 0.50, y: height * 0.10, r: minDim * 0.38, maxA: 0.85 }
     ];
 
     for (const c of circles) {
         const grad = maskCtx.createRadialGradient(c.x, c.y, 0, c.x, c.y, c.r);
         grad.addColorStop(0.00, `rgba(255, 255, 255, ${c.maxA})`);
-        grad.addColorStop(0.35, `rgba(255, 255, 255, ${c.maxA * 0.82})`);
-        grad.addColorStop(0.65, `rgba(255, 255, 255, ${c.maxA * 0.38})`);
+        grad.addColorStop(0.35, `rgba(255, 255, 255, ${c.maxA * 0.80})`);
+        grad.addColorStop(0.65, `rgba(255, 255, 255, ${c.maxA * 0.35})`);
         grad.addColorStop(0.85, `rgba(255, 255, 255, ${c.maxA * 0.08})`);
         grad.addColorStop(1.00, 'rgba(255, 255, 255, 0.0)');
 
@@ -870,9 +879,9 @@ function resizeAndRebuild() {
     }
 
     // Aim for ~100 horizontal lines filling the screen
-    numRows = Math.max(70, Math.min(130, Math.round(height / 11)));
+    numRows = Math.max(65, Math.min(105, Math.round(height / 14)));
     lineHeight = Math.max(10, Math.round(height / numRows));
-    fontSize = Math.max(9, Math.min(13, Math.round(lineHeight * 0.90)));
+    fontSize = Math.max(9, Math.min(13, Math.round(lineHeight * 0.88)));
 
     // Exact monospace character cell width
     if (ctx && ctx.measureText) {
