@@ -102,6 +102,7 @@ let animStartTime = 0;
 let lastFrameTime = 0;
 let motionTime = 0;
 let lastMotionTime = 0;
+let isTransitionComplete = false;
 let pausedAt = 0;
 let totalPausedDuration = 0;
 const FRAME_INTERVAL = 1000 / 30;
@@ -171,7 +172,6 @@ const CODE_RAIN_NOISE_PALETTE = [
 const SNOW_CHARS      = ['0', '1', 'x', '#', '0', '[', ']', '1', '0', '1', 'x', '#', '0', '1', '[', ']'];
 const ALPENGLOW_CHARS = ['#', '*', '8', '#', '0', '*', '#', '8', '0', '#', '*', '#', '8', '0', '#', '*'];
 const SLOPE_CHARS     = ['1', '0', '1', '/', '0', '1', 'x', ';', '0', '1', '|', '1', '0', '/', '1', '0'];
-const SHADOW_CHARS    = ['.', ':', '.', ' ', '.', ':', '.', ' ', '.', ':', '.', ' ', '.', ':', '.', ' '];
 const TREE_CHARS      = ['^', '*', '1', 'x', '0', 'Y', '1', '#', '/', '\\', '1', '0', '^', '*', '0', '1'];
 const SKY_CHARS       = ['0', '1', '0', '1', '1', '0', ';', '0', '1', 'x', ':', '1', '0', '/', '1', '0'];
 
@@ -253,25 +253,37 @@ function buildMountainGrid(nRows, nCols) {
 
 const BACKGROUND_IMAGE_SRC = '/background.webp';
 let backgroundImage = null;
+let cachedBackgroundEl = null;
 
 const MASK_IMAGE_SRC = '/mask.webp';
 let maskImage = null;
+let cachedMaskEl = null;
 
 function getBackgroundImage() {
-    const el = document.getElementById('background-img') || document.getElementById('alpine-reference-img');
-    if (el && el.complete && el.naturalWidth > 0) return el;
+    if (cachedBackgroundEl && cachedBackgroundEl.complete && cachedBackgroundEl.naturalWidth > 0) {
+        return cachedBackgroundEl;
+    }
+    const el = document.getElementById('background-img');
+    if (el && el.complete && el.naturalWidth > 0) {
+        cachedBackgroundEl = el;
+        return el;
+    }
     if (backgroundImage && backgroundImage.complete && backgroundImage.naturalWidth > 0) return backgroundImage;
     return null;
 }
-const getAlpineImage = getBackgroundImage;
 
 function getMaskImage() {
-    const el = document.getElementById('mask-img') || document.getElementById('alpine-mask-img');
-    if (el && el.complete && el.naturalWidth > 0) return el;
+    if (cachedMaskEl && cachedMaskEl.complete && cachedMaskEl.naturalWidth > 0) {
+        return cachedMaskEl;
+    }
+    const el = document.getElementById('mask-img');
+    if (el && el.complete && el.naturalWidth > 0) {
+        cachedMaskEl = el;
+        return el;
+    }
     if (maskImage && maskImage.complete && maskImage.naturalWidth > 0) return maskImage;
     return null;
 }
-const getAlpineMaskImage = getMaskImage;
 
 function onMaskReady() {
     if (maskCanvas && width > 0 && height > 0) {
@@ -280,12 +292,16 @@ function onMaskReady() {
 }
 
 function loadMaskImage() {
-    const el = document.getElementById('mask-img') || document.getElementById('alpine-mask-img');
+    const el = document.getElementById('mask-img');
     if (el) {
         if (el.complete && el.naturalWidth > 0) {
+            cachedMaskEl = el;
             onMaskReady();
         } else {
-            el.addEventListener('load', onMaskReady);
+            el.addEventListener('load', () => {
+                cachedMaskEl = el;
+                onMaskReady();
+            });
         }
         return;
     }
@@ -315,6 +331,7 @@ function buildBlurCanvas(img) {
 }
 
 function onBackgroundImageReady(img) {
+    cachedBackgroundEl = img;
     if (numRows > 0 && numCols > 0) {
         mountainGrid = buildGridFromImage(img, numRows, numCols);
         if (maskCanvas) buildMaskCanvas();
@@ -323,7 +340,7 @@ function onBackgroundImageReady(img) {
 }
 
 function loadBackgroundImage() {
-    const el = document.getElementById('background-img') || document.getElementById('alpine-reference-img');
+    const el = document.getElementById('background-img');
     if (el) {
         if (el.complete && el.naturalWidth > 0) {
             onBackgroundImageReady(el);
@@ -598,6 +615,9 @@ function initStreamRows() {
         // Staggered start delay: lines start appearing in waves (0.0s to 2.2s)
         const startDelay = ((r * 23) % 29) * 0.075;
 
+        // Precomputed leading head speed (~3.2s to traverse 1440px)
+        const headSpeed = 440 + ((r * 29) % 70);
+
         // Line type: ~35% stream authentic RISC-V instructions and systems tokens
         const isInstLine = (r % 3 === 1);
 
@@ -624,10 +644,13 @@ function initStreamRows() {
             y: Math.round((r / numRows) * height),
             direction,
             speed,
+            headSpeed,
             startDelay,
             isInstLine,
             charStream,
+            streamLen: charStream.length,
             noiseColors,
+            noiseLen: noiseColors.length,
             initialOffset: ((r * 73) % 200) * direction
         });
     }
@@ -649,7 +672,7 @@ function buildMaskCanvas() {
             0, 0, width, height
         );
 
-        // Precompute active row ranges based on continuous panoramic alpine-mask.webp:
+        // Precompute active row ranges based on continuous panoramic mask.webp:
         // Spans full viewport width horizontally, and sky through lower mountain slopes (y <= 620)
         const minX = 0;
         const maxX = width;
@@ -772,35 +795,39 @@ function renderFrame(time) {
     let blurAmount = 0.0;
     let speedFactor = 0.25;
 
-    if (elapsed < 9.0 && !reducedMotionQuery.matches) {
-        let maxLtrDist = 0;
-        let maxRtlDist = 0;
-        for (let r = 0; r < numRows; r++) {
-            const row = streamRows[r];
-            if (!row || elapsed < row.startDelay) continue;
-            const activeTime = elapsed - row.startDelay;
-            const headSpeed = 440 + ((r * 29) % 70);
-            const headDist = headSpeed * activeTime;
-            if (row.direction > 0) {
-                if (headDist > maxLtrDist) maxLtrDist = Math.min(width, headDist);
-            } else {
-                if (headDist > maxRtlDist) maxRtlDist = Math.min(width, headDist);
-            }
-        }
-        // 25% initial delay: holds 100% full blur for the first 25% of stream traversal before easing to 0
-        const totalTraveled = maxLtrDist + maxRtlDist;
-        const progress = Math.min(1.0, totalTraveled / (2 * width));
-        if (progress <= 0.25) {
-            blurAmount = 1.0;
-            speedFactor = 1.0;
-        } else if (progress < 1.0) {
-            const fadeRatio = (progress - 0.25) / 0.75;
-            // Smooth cosine easing from 1.0 down to 0.0 across remaining 75%
-            blurAmount = 0.5 + 0.5 * Math.cos(fadeRatio * Math.PI);
-            speedFactor = 0.25 + 0.75 * blurAmount;
+    if (!isTransitionComplete && !reducedMotionQuery.matches) {
+        if (elapsed >= 9.0) {
+            isTransitionComplete = true;
         } else {
-            blurAmount = 0.0;
-            speedFactor = 0.25;
+            let maxLtrDist = 0;
+            let maxRtlDist = 0;
+            for (let r = 0; r < numRows; r++) {
+                const row = streamRows[r];
+                if (!row || elapsed < row.startDelay) continue;
+                const activeTime = elapsed - row.startDelay;
+                const headDist = row.headSpeed * activeTime;
+                if (row.direction > 0) {
+                    if (headDist > maxLtrDist) maxLtrDist = Math.min(width, headDist);
+                } else {
+                    if (headDist > maxRtlDist) maxRtlDist = Math.min(width, headDist);
+                }
+            }
+            // 25% initial delay: holds 100% full blur for the first 25% of stream traversal before easing to 0
+            const totalTraveled = maxLtrDist + maxRtlDist;
+            const progress = Math.min(1.0, totalTraveled / (2 * width));
+            if (progress <= 0.25) {
+                blurAmount = 1.0;
+                speedFactor = 1.0;
+            } else if (progress < 1.0) {
+                const fadeRatio = (progress - 0.25) / 0.75;
+                // Smooth cosine easing from 1.0 down to 0.0 across remaining 75%
+                blurAmount = 0.5 + 0.5 * Math.cos(fadeRatio * Math.PI);
+                speedFactor = 0.25 + 0.75 * blurAmount;
+            } else {
+                blurAmount = 0.0;
+                speedFactor = 0.25;
+                isTransitionComplete = true;
+            }
         }
     }
 
@@ -851,8 +878,7 @@ function renderFrame(time) {
         const offset = Math.round(row.initialOffset + row.speed * motionTime);
 
         // Leading head enters at constant speed across the screen (~3.2s to traverse 1440px)
-        const headSpeed = 440 + ((r * 29) % 70);
-        const headDist = headSpeed * activeTime;
+        const headDist = row.headSpeed * activeTime;
         let headMinX = -charWidth;
         let headMaxX = width + charWidth;
         if (row.direction < 0) {
@@ -896,23 +922,23 @@ function renderFrame(time) {
             // Co-registered with normalized screen width (screenX / width) to ensure
             // 1:1 spatial lockstep with the underlying reference photograph
             const normX = (screenX + charWidth * 0.5) / width;
-            const col = Math.floor(normX * numCols);
-            const wrappedCol = ((col % numCols) + numCols) % numCols;
+            const col = (normX * numCols) | 0;
+            let wrappedCol = col % numCols;
+            if (wrappedCol < 0) wrappedCol += numCols;
             const mtnPix = mountainGrid[r][wrappedCol];
             const targetColor = mtnPix.color;
 
             let charToDraw;
             let charColor;
 
-            if (mtnPix && mtnPix.isStar) {
+            if (mtnPix.isStar) {
                 // Background celestial stars pinned to fixed screen coordinates (never flicker or change with scrolling)
                 charToDraw = mtnPix.starGlyph;
                 charColor = targetColor;
             } else if (row.isInstLine) {
                 // RISC-V Instruction Line (strictly reads forward left-to-right)
-                const len = row.charStream.length;
-                let charIdx = tokenIdx % len;
-                if (charIdx < 0) charIdx += len;
+                let charIdx = tokenIdx % row.streamLen;
+                if (charIdx < 0) charIdx += row.streamLen;
                 charToDraw = row.charStream[charIdx];
                 if (charToDraw === ' ') {
                     if (batchStr.length > 0) {
@@ -924,9 +950,8 @@ function renderFrame(time) {
                 }
 
                 if (lineReveal < 1.0) {
-                    const noiseLen = row.noiseColors.length;
-                    let noiseIdx = tokenIdx % noiseLen;
-                    if (noiseIdx < 0) noiseIdx += noiseLen;
+                    let noiseIdx = tokenIdx % row.noiseLen;
+                    if (noiseIdx < 0) noiseIdx += row.noiseLen;
                     charColor = (lineReveal > 0.5) ? targetColor : row.noiseColors[noiseIdx];
                 } else {
                     charColor = targetColor;
@@ -936,9 +961,8 @@ function renderFrame(time) {
                 const finalGlyph = pickGlyph(tokenIdx, r, mtnPix);
 
                 if (lineReveal < 1.0) {
-                    const noiseLen = row.noiseColors.length;
-                    let noiseIdx = tokenIdx % noiseLen;
-                    if (noiseIdx < 0) noiseIdx += noiseLen;
+                    let noiseIdx = tokenIdx % row.noiseLen;
+                    if (noiseIdx < 0) noiseIdx += row.noiseLen;
                     charToDraw = (tokenIdx & 1) === 0 ? '1' : '0';
                     charColor = row.noiseColors[noiseIdx];
 
@@ -1128,6 +1152,7 @@ function resizeAndRebuild() {
     }
 
     lastMotionTime = 0;
+    isTransitionComplete = false;
 
     if (reducedMotionQuery.matches) {
         stopAnimation();
