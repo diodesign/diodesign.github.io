@@ -136,14 +136,14 @@ function getSkyColor(yn, colIdx, rowIdx) {
         return 'rgba(186, 230, 253, 0.95)'; // Brilliant ice-cyan star
     }
     // Smooth atmospheric nocturnal twilight gradient
-    if (yn <= 0.08) {
-        return 'rgba(23, 37, 84, 0.80)'; // Deep midnight navy
-    } else if (yn <= 0.20) {
-        return 'rgba(30, 58, 138, 0.85)'; // Royal navy blue
-    } else if (yn <= 0.32) {
-        return 'rgba(2, 132, 199, 0.88)'; // Electric cerulean
+    if (yn <= 0.12) {
+        return 'rgba(23, 37, 84, 0.75)'; // Deep midnight navy
+    } else if (yn <= 0.26) {
+        return 'rgba(30, 58, 138, 0.80)'; // Royal navy blue
+    } else if (yn <= 0.40) {
+        return 'rgba(2, 132, 199, 0.80)'; // Cerulean
     } else {
-        return 'rgba(14, 165, 233, 0.90)'; // Horizon cyan-blue
+        return 'rgba(37, 99, 235, 0.82)'; // Soft twilight blue
     }
 }
 
@@ -326,21 +326,16 @@ function buildGridFromImage(img, nRows, nCols) {
             const green = imgData[idx + 1];
             const blue = imgData[idx + 2];
             const lum = (0.299 * red + 0.587 * green + 0.114 * blue) / 255.0;
+            const diffBR = blue - red;
 
             // Mountain signature:
-            // Alpenglow (red > 75 && red > blue + 10), snow (lum >= 0.25), or craggy rock (red >= 40 && red > blue - 5)
-            const isMtn = (red > 75 && red > blue + 10) || (lum >= 0.25) || (red >= 40 && red > blue - 5);
-            if (isMtn && r + 1 < nRows) {
-                // Confirm with subsequent row to eliminate any single-pixel compression artifact
-                const nextIdx = ((r + 1) * nCols + c) * 4;
-                const nr = imgData[nextIdx];
-                const ng = imgData[nextIdx + 1];
-                const nb = imgData[nextIdx + 2];
-                const nlum = (0.299 * nr + 0.587 * ng + 0.114 * nb) / 255.0;
-                if (nlum >= 0.16 || nr >= 36) {
-                    crest = r;
-                    break;
-                }
+            // 1. Alpenglow: red > 75 && red > blue + 10
+            // 2. Glacial snow: lum >= 0.24
+            // 3. Craggy rock / dark shadow ridge: diffBR < 25 && (lum < 0.14 || red >= 35)
+            const isMtn = (red > 75 && red > blue + 10) || (lum >= 0.24) || (diffBR < 25 && (lum < 0.14 || red >= 35));
+            if (isMtn) {
+                crest = r;
+                break;
             }
         }
         rawCrest[c] = crest;
@@ -454,11 +449,11 @@ function buildGridFromImage(img, nRows, nCols) {
                 qb = Math.round(blue * 0.75);
             } else if (lum < 0.14) {
                 type = 'shadow'; // Deep rock crevices & couloir shadows
-                glyphSet = SHADOW_CHARS;
-                fill = 0.10;
-                qr = Math.max(16, qr);
-                qg = Math.max(26, qg);
-                qb = Math.max(48, qb);
+                glyphSet = SLOPE_CHARS; // Use readable binary & syntax glyphs instead of empty spaces
+                fill = 0.20;
+                qr = Math.max(28, qr);
+                qg = Math.max(40, qg);
+                qb = Math.max(68, qb);
             } else {
                 type = 'mountain'; // Craggy slate rock faces
                 glyphSet = SLOPE_CHARS;
