@@ -48,11 +48,14 @@ const reducedMotionQuery = typeof window !== 'undefined' && window.matchMedia
     ? window.matchMedia('(prefers-reduced-motion: reduce)')
     : { matches: false };
 
-let isIntersecting = true;
 let width = 0;
 let height = 0;
 let rafId = null;
 let animStartTime = 0;
+let lastFrameTime = 0;
+let pausedAt = 0;
+let totalPausedDuration = 0;
+const FRAME_INTERVAL = 1000 / 30;
 
 // Offscreen buffer canvases for code rain layer & radial transparency mask
 let photoCrop = { sx: 0, sy: 0, sw: 0, sh: 0 };
@@ -60,6 +63,7 @@ const rainCanvas = typeof document !== 'undefined' ? document.createElement('can
 const rainCtx = rainCanvas ? rainCanvas.getContext('2d') : null;
 const maskCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
 const maskCtx = maskCanvas ? maskCanvas.getContext('2d') : null;
+let maskRowRanges = null;
 
 // Grid configuration
 let numRows = 100;
@@ -427,6 +431,11 @@ function buildGridFromImage(img, nRows, nCols) {
                 qb = Math.max(78, qb);
             }
 
+            // Quantize to steps of 16 for high-efficiency run-length grouping in Canvas 2D
+            qr = Math.min(255, Math.round(qr / 16) * 16);
+            qg = Math.min(255, Math.round(qg / 16) * 16);
+            qb = Math.min(255, Math.round(qb / 16) * 16);
+
             row[c] = {
                 fill,
                 lum,
@@ -514,36 +523,64 @@ function buildMaskCanvas() {
         ? ((380 - photoCrop.sy) / photoCrop.sh) * height
         : height * 0.52;
 
+    // Main mountain right flank & glacier cirque (photo x=760, y=360)
+    // Covers the central mountain's right shoulder/glaciers, terminating well before the far-right shard peak
     const rightX = photoCrop.sw > 0
-        ? ((1020 - photoCrop.sx) / photoCrop.sw) * width
-        : width * 0.82;
+        ? ((760 - photoCrop.sx) / photoCrop.sw) * width
+        : width * 0.60;
     const rightY = photoCrop.sh > 0
         ? ((360 - photoCrop.sy) / photoCrop.sh) * height
-        : height * 0.48;
+        : height * 0.45;
 
     const circles = [
         // 1. Centerpiece: Towering alpine summit horn & knife-edge ridges
-        { x: summitX, y: summitY, r: minDim * 0.52, maxA: 0.98 },
+        { x: summitX, y: summitY, r: minDim * 0.46, maxA: 0.98 },
         // 2. Left flank: High ridges and cascading rock gullies
-        { x: leftX, y: leftY, r: minDim * 0.44, maxA: 0.90 },
+        { x: leftX, y: leftY, r: minDim * 0.38, maxA: 0.90 },
         // 3. Right flank: Glaciers, ridges, and valley
-        { x: rightX, y: rightY, r: minDim * 0.48, maxA: 0.92 },
+        { x: rightX, y: rightY, r: minDim * 0.36, maxA: 0.92 },
         // 4. Atmospheric Sky Matrix
-        { x: width * 0.50, y: height * 0.10, r: minDim * 0.42, maxA: 0.85 }
+        { x: summitX, y: height * 0.10, r: minDim * 0.34, maxA: 0.85 }
     ];
 
     for (const c of circles) {
         const grad = maskCtx.createRadialGradient(c.x, c.y, 0, c.x, c.y, c.r);
         grad.addColorStop(0.00, `rgba(255, 255, 255, ${c.maxA})`);
-        grad.addColorStop(0.35, `rgba(255, 255, 255, ${c.maxA * 0.85})`);
-        grad.addColorStop(0.65, `rgba(255, 255, 255, ${c.maxA * 0.45})`);
-        grad.addColorStop(0.85, `rgba(255, 255, 255, ${c.maxA * 0.15})`);
+        grad.addColorStop(0.35, `rgba(255, 255, 255, ${c.maxA * 0.82})`);
+        grad.addColorStop(0.65, `rgba(255, 255, 255, ${c.maxA * 0.38})`);
+        grad.addColorStop(0.85, `rgba(255, 255, 255, ${c.maxA * 0.08})`);
         grad.addColorStop(1.00, 'rgba(255, 255, 255, 0.0)');
 
         maskCtx.fillStyle = grad;
         maskCtx.beginPath();
         maskCtx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
         maskCtx.fill();
+    }
+
+    // Precompute active horizontal span [minX, maxX] for each row
+    maskRowRanges = new Array(numRows);
+    for (let r = 0; r < numRows; r++) {
+        const rowY = (streamRows && streamRows[r]) ? streamRows[r].y : Math.round(r * lineHeight);
+        let rMin = Infinity;
+        let rMax = -Infinity;
+        for (const c of circles) {
+            const dy = Math.abs(rowY - c.y);
+            if (dy < c.r) {
+                const dx = Math.sqrt(c.r * c.r - dy * dy);
+                const cMin = c.x - dx;
+                const cMax = c.x + dx;
+                if (cMin < rMin) rMin = cMin;
+                if (cMax > rMax) rMax = cMax;
+            }
+        }
+        if (rMin <= rMax) {
+            maskRowRanges[r] = {
+                minX: Math.max(0, Math.floor(rMin)),
+                maxX: Math.min(width, Math.ceil(rMax))
+            };
+        } else {
+            maskRowRanges[r] = null;
+        }
     }
 }
 
@@ -555,7 +592,7 @@ function renderFrame(time) {
     if (smallScreenQuery.matches) return;
 
     if (!animStartTime) animStartTime = time;
-    const elapsed = (time - animStartTime) / 1000;
+    const elapsed = (time - animStartTime - totalPausedDuration) / 1000;
 
     // 1. Render reference photograph behind the code rain (exact 1:1 scale & crop)
     const imgEl = getAlpineImage();
@@ -579,8 +616,11 @@ function renderFrame(time) {
     targetCtx.textBaseline = 'top';
 
     for (let r = 0; r < numRows; r++) {
+        const range = maskRowRanges ? maskRowRanges[r] : null;
+        if (!range) continue; // Skip rows outside all aperture circles completely
+
         const row = streamRows[r];
-        if (elapsed < row.startDelay) continue; // Line hasn't started appearing yet
+        if (!row || elapsed < row.startDelay) continue; // Line hasn't started appearing yet
 
         const activeTime = elapsed - row.startDelay;
         // Smooth transition over ~3.0s from initial random matrix binary to crystallized snowy mountain
@@ -604,16 +644,30 @@ function renderFrame(time) {
             if (headX < width) headMaxX = headX;
         }
 
+        const clampMinX = Math.max(range.minX, headMinX);
+        const clampMaxX = Math.min(range.maxX, headMaxX);
+        if (clampMinX > clampMaxX) continue;
+
         const rowY = row.y; // Whole integer scanline
 
-        // Visible character index range
-        const minI = Math.floor((-charWidth - offset) / charWidth);
-        const maxI = Math.ceil((width + charWidth - offset) / charWidth);
+        // Visible character index range bounded strictly to active aperture span
+        const minI = Math.floor((clampMinX - charWidth - offset) / charWidth);
+        const maxI = Math.ceil((clampMaxX + charWidth - offset) / charWidth);
 
-        let lastColor = '';
+        let batchStr = '';
+        let batchColor = '';
+        let batchStartX = 0;
+
         for (let i = minI; i <= maxI; i++) {
             const screenX = i * charWidth + offset;
-            if (screenX < headMinX || screenX > headMaxX) continue;
+            if (screenX < clampMinX - charWidth || screenX > clampMaxX + charWidth) {
+                if (batchStr.length > 0) {
+                    targetCtx.fillStyle = batchColor;
+                    targetCtx.fillText(batchStr, batchStartX, rowY);
+                    batchStr = '';
+                }
+                continue;
+            }
 
             const tokenIdx = i;
 
@@ -635,7 +689,14 @@ function renderFrame(time) {
                 let charIdx = tokenIdx % len;
                 if (charIdx < 0) charIdx += len;
                 charToDraw = row.charStream[charIdx];
-                if (charToDraw === ' ') continue;
+                if (charToDraw === ' ') {
+                    if (batchStr.length > 0) {
+                        targetCtx.fillStyle = batchColor;
+                        targetCtx.fillText(batchStr, batchStartX, rowY);
+                        batchStr = '';
+                    }
+                    continue;
+                }
 
                 if (lineReveal < 1.0) {
                     const noiseLen = row.noiseColors.length;
@@ -668,14 +729,31 @@ function renderFrame(time) {
                 }
             }
 
-            if (charToDraw === ' ') continue;
-
-            // Render each character cell at its exact integer physical pixel coordinate
-            // Minimize Canvas 2D state changes by caching fillStyle
-            if (lastColor !== charColor) {
-                targetCtx.fillStyle = lastColor = charColor;
+            if (charToDraw === ' ') {
+                if (batchStr.length > 0) {
+                    targetCtx.fillStyle = batchColor;
+                    targetCtx.fillText(batchStr, batchStartX, rowY);
+                    batchStr = '';
+                }
+                continue;
             }
-            targetCtx.fillText(charToDraw, screenX, rowY);
+
+            // Run-length batching: draw runs of identical color characters in single fillText calls
+            if (batchStr.length > 0 && batchColor === charColor) {
+                batchStr += charToDraw;
+            } else {
+                if (batchStr.length > 0) {
+                    targetCtx.fillStyle = batchColor;
+                    targetCtx.fillText(batchStr, batchStartX, rowY);
+                }
+                batchStr = charToDraw;
+                batchColor = charColor;
+                batchStartX = screenX;
+            }
+        }
+        if (batchStr.length > 0) {
+            targetCtx.fillStyle = batchColor;
+            targetCtx.fillText(batchStr, batchStartX, rowY);
         }
     }
 
@@ -698,18 +776,24 @@ function isAnimationActive() {
     if (typeof document !== 'undefined') {
         if (document.hidden || document.visibilityState !== 'visible') return false;
     }
-    if (!isIntersecting) return false;
     if (reducedMotionQuery.matches) return false;
     return true;
 }
 
 function startAnimation() {
+    if (pausedAt > 0) {
+        totalPausedDuration += performance.now() - pausedAt;
+        pausedAt = 0;
+    }
     if (!rafId && isAnimationActive()) {
         rafId = requestAnimationFrame(animate);
     }
 }
 
 function stopAnimation() {
+    if (!pausedAt) {
+        pausedAt = performance.now();
+    }
     if (rafId) {
         cancelAnimationFrame(rafId);
         rafId = null;
@@ -726,22 +810,7 @@ function setupLandscapeInteractions() {
         }
     });
 
-    // 2. Pause when canvas is not intersecting the viewport
-    if (typeof IntersectionObserver !== 'undefined' && canvas) {
-        const observer = new IntersectionObserver((entries) => {
-            for (const entry of entries) {
-                isIntersecting = entry.isIntersecting;
-                if (isIntersecting) {
-                    startAnimation();
-                } else {
-                    stopAnimation();
-                }
-            }
-        }, { threshold: 0.01 });
-        observer.observe(canvas);
-    }
-
-    // 3. Respect user's OS prefers-reduced-motion setting
+    // 2. Respect user's OS prefers-reduced-motion setting
     if (reducedMotionQuery.addEventListener) {
         reducedMotionQuery.addEventListener('change', () => {
             if (reducedMotionQuery.matches) {
@@ -761,8 +830,19 @@ function animate(time) {
         return;
     }
 
-    renderFrame(time);
     rafId = requestAnimationFrame(animate);
+
+    // Frame rate pacing (rock-steady 30 FPS, ~33.3ms)
+    if (time - lastFrameTime < FRAME_INTERVAL) {
+        return;
+    }
+    if (lastFrameTime === 0 || time - lastFrameTime > 200) {
+        lastFrameTime = time;
+    } else {
+        lastFrameTime += FRAME_INTERVAL;
+    }
+
+    renderFrame(time);
 }
 
 function resizeAndRebuild() {
@@ -794,10 +874,10 @@ function resizeAndRebuild() {
     lineHeight = Math.max(10, Math.round(height / numRows));
     fontSize = Math.max(9, Math.min(13, Math.round(lineHeight * 0.90)));
 
-    // Exact integer monospace character cell width
-    if (ctx) {
+    // Exact monospace character cell width
+    if (ctx && ctx.measureText) {
         ctx.font = fontSize + 'px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace';
-        charWidth = Math.max(6, Math.ceil(ctx.measureText('0').width));
+        charWidth = Math.max(6, ctx.measureText('0').width);
     } else {
         charWidth = Math.max(6, Math.round(fontSize * 0.65));
     }
@@ -812,13 +892,13 @@ function resizeAndRebuild() {
         mountainGrid = buildMountainGrid(numRows, numCols);
     }
 
-    // Rebuild radial transparency mask once photoCrop coordinates are locked
+    // Initialize horizontal stream rows
+    initStreamRows();
+
+    // Rebuild radial transparency mask once photoCrop coordinates and stream rows are locked
     if (maskCanvas) {
         buildMaskCanvas();
     }
-
-    // Initialize horizontal stream rows
-    initStreamRows();
 
     if (reducedMotionQuery.matches) {
         stopAnimation();
