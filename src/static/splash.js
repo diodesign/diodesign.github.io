@@ -552,17 +552,17 @@ function buildMaskCanvas() {
             0, 0, width, height
         );
 
-        // Precompute active row ranges based on alpine-mask.webp non-zero footprint:
-        // photoX spans [80, 1170] and photoY spans [35, 640]
-        const minX = Math.max(0, Math.floor(((80 - photoCrop.sx) / photoCrop.sw) * width));
-        const maxX = Math.min(width, Math.ceil(((1170 - photoCrop.sx) / photoCrop.sw) * width));
-        const minY = Math.max(0, Math.floor(((35 - photoCrop.sy) / photoCrop.sh) * height));
-        const maxY = Math.min(height, Math.ceil(((640 - photoCrop.sy) / photoCrop.sh) * height));
+        // Precompute active row ranges based on continuous panoramic alpine-mask.webp:
+        // Spans full viewport width horizontally, and sky through lower mountain slopes (y <= 620)
+        const minX = 0;
+        const maxX = width;
+        const minY = 0;
+        const maxY = Math.min(height, Math.ceil(((620 - photoCrop.sy) / photoCrop.sh) * height));
 
         maskRowRanges = new Array(numRows);
         for (let r = 0; r < numRows; r++) {
             const rowY = (streamRows && streamRows[r]) ? streamRows[r].y : Math.round(r * lineHeight);
-            if (rowY >= minY && rowY <= maxY && minX < maxX) {
+            if (rowY >= minY && rowY <= maxY) {
                 maskRowRanges[r] = { minX, maxX };
             } else {
                 maskRowRanges[r] = null;
