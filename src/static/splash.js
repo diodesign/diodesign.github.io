@@ -91,7 +91,7 @@ const RISCV_INSTRUCTION_CORPUS = [
     'jalr zero, 0(ra); ',
     'ecall; ',
     'fence; ',
-    '// silicon hypervisor ',
+    '// zig hypervisor ',
     '#diodesign rv64gc ',
     '0x80000000 -> 0x1000 '
 ];
@@ -514,30 +514,21 @@ function buildMaskCanvas() {
         ? ((380 - photoCrop.sy) / photoCrop.sh) * height
         : height * 0.52;
 
-    const rightX = photoCrop.sw > 0
-        ? ((1050 - photoCrop.sx) / photoCrop.sw) * width
-        : width * 0.84;
-    const rightY = photoCrop.sh > 0
-        ? ((420 - photoCrop.sy) / photoCrop.sh) * height
-        : height * 0.56;
-
     const circles = [
-        // Summit Horn & Ridge (Centerpiece)
-        { x: summitX, y: summitY, r: minDim * 0.48, maxA: 0.98 },
-        // Left Ridge & Flank
-        { x: leftX, y: leftY, r: minDim * 0.40, maxA: 0.90 },
-        // Right Flank & Glacier Cirque
-        { x: rightX, y: rightY, r: minDim * 0.42, maxA: 0.92 },
-        // Atmospheric Sky Matrix
-        { x: width * 0.50, y: height * 0.10, r: minDim * 0.38, maxA: 0.85 }
+        // 1. Centerpiece: Towering alpine summit horn & knife-edge ridges
+        { x: summitX, y: summitY, r: minDim * 0.50, maxA: 0.98 },
+        // 2. Left flank: High ridges and cascading rock gullies
+        { x: leftX, y: leftY, r: minDim * 0.42, maxA: 0.90 },
+        // 3. Atmospheric Sky Matrix
+        { x: width * 0.50, y: height * 0.10, r: minDim * 0.40, maxA: 0.85 }
     ];
 
     for (const c of circles) {
         const grad = maskCtx.createRadialGradient(c.x, c.y, 0, c.x, c.y, c.r);
         grad.addColorStop(0.00, `rgba(255, 255, 255, ${c.maxA})`);
-        grad.addColorStop(0.35, `rgba(255, 255, 255, ${c.maxA * 0.85})`);
-        grad.addColorStop(0.68, `rgba(255, 255, 255, ${c.maxA * 0.40})`);
-        grad.addColorStop(0.88, `rgba(255, 255, 255, ${c.maxA * 0.12})`);
+        grad.addColorStop(0.30, `rgba(255, 255, 255, ${c.maxA * 0.85})`);
+        grad.addColorStop(0.60, `rgba(255, 255, 255, ${c.maxA * 0.45})`);
+        grad.addColorStop(0.82, `rgba(255, 255, 255, ${c.maxA * 0.15})`);
         grad.addColorStop(1.00, 'rgba(255, 255, 255, 0.0)');
 
         maskCtx.fillStyle = grad;
