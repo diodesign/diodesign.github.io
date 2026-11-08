@@ -41,8 +41,14 @@ function setupAccordion() {
 
 const canvas = document.getElementById('splash-canvas');
 const ctx = canvas ? canvas.getContext('2d') : null;
-const smallScreenQuery = window.matchMedia('(max-width: 768px)');
+const smallScreenQuery = typeof window !== 'undefined' && window.matchMedia
+    ? window.matchMedia('(max-width: 768px)')
+    : { matches: false };
+const reducedMotionQuery = typeof window !== 'undefined' && window.matchMedia
+    ? window.matchMedia('(prefers-reduced-motion: reduce)')
+    : { matches: false };
 
+let isIntersecting = true;
 let width = 0;
 let height = 0;
 let rafId = null;
@@ -687,35 +693,78 @@ function renderFrame(time) {
 }
 
 // -------------------------------------------------------------
-// RESIZE, LIFECYCLE & NO-OP INTERACTION HANDLER
+// VISIBILITY, LIFECYCLE & PERFORMANCE MANAGEMENT
 // -------------------------------------------------------------
+
+function isAnimationActive() {
+    if (smallScreenQuery.matches) return false;
+    if (typeof document !== 'undefined') {
+        if (document.hidden || document.visibilityState !== 'visible') return false;
+    }
+    if (!isIntersecting) return false;
+    if (reducedMotionQuery.matches) return false;
+    return true;
+}
+
+function startAnimation() {
+    if (!rafId && isAnimationActive()) {
+        rafId = requestAnimationFrame(animate);
+    }
+}
+
+function stopAnimation() {
+    if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+    }
+}
+
 function setupLandscapeInteractions() {
-    // Autonomous background animation with central floating panel:
-    // No background drag or mouse steering, background is non-interactive.
+    // 1. Pause RAF loop completely whenever tab/window is hidden or minimized
     document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
-            if (rafId) {
-                cancelAnimationFrame(rafId);
-                rafId = null;
-            }
+        if (document.hidden || document.visibilityState !== 'visible') {
+            stopAnimation();
         } else {
-            if (!rafId && !smallScreenQuery.matches) {
-                rafId = requestAnimationFrame(animate);
-            }
+            startAnimation();
         }
     });
+
+    // 2. Pause when canvas is not intersecting the viewport
+    if (typeof IntersectionObserver !== 'undefined' && canvas) {
+        const observer = new IntersectionObserver((entries) => {
+            for (const entry of entries) {
+                isIntersecting = entry.isIntersecting;
+                if (isIntersecting) {
+                    startAnimation();
+                } else {
+                    stopAnimation();
+                }
+            }
+        }, { threshold: 0.01 });
+        observer.observe(canvas);
+    }
+
+    // 3. Respect user's OS prefers-reduced-motion setting
+    if (reducedMotionQuery.addEventListener) {
+        reducedMotionQuery.addEventListener('change', () => {
+            if (reducedMotionQuery.matches) {
+                stopAnimation();
+                renderFrame(performance.now());
+            } else {
+                startAnimation();
+            }
+        });
+    }
 }
 
 function animate(time) {
-    if (smallScreenQuery.matches) {
+    // Hard stop: immediately halt and do not request subsequent frames when not visible
+    if (!isAnimationActive()) {
         rafId = null;
         return;
     }
 
-    if (document.visibilityState === 'visible') {
-        renderFrame(time);
-    }
-
+    renderFrame(time);
     rafId = requestAnimationFrame(animate);
 }
 
@@ -723,10 +772,7 @@ function resizeAndRebuild() {
     if (!canvas) return;
 
     if (smallScreenQuery.matches) {
-        if (rafId) {
-            cancelAnimationFrame(rafId);
-            rafId = null;
-        }
+        stopAnimation();
         return;
     }
 
@@ -777,8 +823,11 @@ function resizeAndRebuild() {
     // Initialize horizontal stream rows
     initStreamRows();
 
-    if (!rafId) {
-        rafId = requestAnimationFrame(animate);
+    if (reducedMotionQuery.matches) {
+        stopAnimation();
+        renderFrame(performance.now());
+    } else {
+        startAnimation();
     }
 }
 // ============================================================================
