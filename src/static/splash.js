@@ -772,12 +772,16 @@ function renderFrame(time) {
                 if (headDist > maxRtlDist) maxRtlDist = Math.min(width, headDist);
             }
         }
-        // Doubled blur time: transition runs across full traversal of opposing streams across the screen
+        // 25% initial delay: holds 100% full blur for the first 25% of stream traversal before easing to 0
         const totalTraveled = maxLtrDist + maxRtlDist;
-        const remaining = Math.max(0, 2 * width - totalTraveled);
-        const blurRatio = Math.min(1.0, remaining / (2 * width));
-        // Smooth cosine easing from 1.0 down to 0.0 over doubled duration
-        blurAmount = 0.5 - 0.5 * Math.cos(blurRatio * Math.PI);
+        const progress = Math.min(1.0, totalTraveled / (2 * width));
+        if (progress <= 0.25) {
+            blurAmount = 1.0;
+        } else {
+            const fadeRatio = (progress - 0.25) / 0.75;
+            // Smooth cosine easing from 1.0 down to 0.0 across remaining 75%
+            blurAmount = 0.5 + 0.5 * Math.cos(fadeRatio * Math.PI);
+        }
     }
 
     // 1. Render reference photograph behind the code rain (exact 1:1 scale & crop)
