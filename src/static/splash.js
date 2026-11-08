@@ -107,12 +107,45 @@ let pausedAt = 0;
 let totalPausedDuration = 0;
 
 // -------------------------------------------------------------
-// COMPUTE CAPABILITY DETECTION & ADAPTIVE FRAME GOVERNOR
+// COMPUTE CAPABILITY DETECTION, BENCHMARK & ADAPTIVE GOVERNOR
 // -------------------------------------------------------------
 // Tiers:
-// 'high':   >=8 CPU threads, dedicated/hardware GPU, 30 FPS, dense scanlines (~100), full blur passes
+// 'high':   >=8 CPU threads, dedicated/hardware GPU, fast canvas throughput, 30 FPS, dense scanlines (~100), full blur passes
 // 'medium': 4-7 CPU threads, balanced scanlines (~65), 30/24 FPS
 // 'low':    <=2 CPU threads, software rasterizer (SwiftShader/llvmpipe), data-saver, ~45 scanlines, 20 FPS, bypasses blur canvas
+
+let benchmarkScoreMs = null;
+
+function runComputeBenchmark() {
+    if (typeof document === 'undefined' || typeof performance === 'undefined') {
+        return null;
+    }
+    try {
+        const benchCanvas = document.createElement('canvas');
+        benchCanvas.width = 160;
+        benchCanvas.height = 90;
+        const bCtx = benchCanvas.getContext('2d');
+        if (!bCtx) return null;
+
+        // Warmup: prime glyph cache and 2D canvas pipeline
+        bCtx.font = '10px ui-monospace, monospace';
+        bCtx.fillText('0', 0, 10);
+
+        // Timed micro-benchmark: 350 glyph writes with alternating color states + canvas blit
+        const t0 = performance.now();
+        for (let i = 0; i < 350; i++) {
+            bCtx.fillStyle = (i & 1) ? '#38bdf8' : '#1e3a8a';
+            bCtx.fillText((i & 1) ? '1' : '0', (i % 20) * 8, ((i / 20) | 0) * 8);
+        }
+        bCtx.drawImage(benchCanvas, 0, 0, 80, 45);
+        const elapsed = performance.now() - t0;
+        benchmarkScoreMs = Math.round(elapsed * 100) / 100;
+        return elapsed;
+    } catch (_) {
+        return null;
+    }
+}
+
 function detectComputeTier() {
     if (typeof window === 'undefined') return 'high';
 
@@ -156,6 +189,24 @@ function detectComputeTier() {
     if (isSoftwareGPU || cores <= 2 || memory <= 2) {
         return 'low';
     }
+
+    // 5. Active 2D canvas fill-rate micro-benchmark (< 2ms)
+    const benchTime = runComputeBenchmark();
+    if (benchTime !== null) {
+        // High-end hardware: executes micro-benchmark in < 2.0ms
+        if (cores >= 8 && memory >= 4 && benchTime < 2.0) {
+            return 'high';
+        }
+        // If benchmark took > 4.0ms, browser canvas pipeline or CPU is under severe strain
+        if (benchTime > 4.0) {
+            return 'low';
+        }
+        if (benchTime > 2.0 || cores < 8 || memory < 4) {
+            return 'medium';
+        }
+        return 'high';
+    }
+
     if (cores < 8 || memory < 4) {
         return 'medium';
     }
@@ -165,6 +216,15 @@ function detectComputeTier() {
 let computeTier = detectComputeTier();
 let targetFps = computeTier === 'low' ? 20 : 30;
 let frameInterval = 1000 / targetFps;
+
+if (typeof window !== 'undefined') {
+    window.diodesignBenchmark = runComputeBenchmark;
+    window.__diodesign = {
+        getTier: () => computeTier,
+        getFps: () => targetFps,
+        getBenchmark: () => benchmarkScoreMs
+    };
+}
 
 // Dynamic performance governor: monitors real-world frame execution time
 let slowFrameCount = 0;
