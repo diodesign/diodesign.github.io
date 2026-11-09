@@ -1,31 +1,6 @@
 // ============================================================================
-// 1. SINGLE-OPEN EXPANDABLE ACCORDION CONTROLLER & FOCUS GOVERNOR
+// 1. SINGLE-OPEN EXPANDABLE ACCORDION CONTROLLER
 // ============================================================================
-
-// Dynamic Child-Pane Focus Governor (Normal-to-stop & Stop-to-normal processing loop)
-let focusActivityFactor = 1.0;
-let targetActivityFactor = 1.0;
-
-function hasActiveChildPane() {
-    if (typeof document === 'undefined') return false;
-    const explorer = document.getElementById('riscv-explorer-view');
-    if (explorer && !explorer.hidden) return true;
-    const activeAccordion = document.querySelector('.accordion-item.active');
-    return Boolean(activeAccordion);
-}
-
-function checkPaneFocusState() {
-    const isFocused = hasActiveChildPane();
-    targetActivityFactor = isFocused ? 0.0 : 1.0;
-
-    // If losing focus (closing child pane): immediately wake the animation loop
-    // If gaining focus: ensure loop is running so it can smoothly decelerate to a stop
-    if (!rafId && isAnimationActive()) {
-        if (!isFocused || focusActivityFactor > 0.0) {
-            startAnimation();
-        }
-    }
-}
 
 function setupAccordion() {
     const accordion = document.getElementById('lab-accordion');
@@ -37,7 +12,6 @@ function setupAccordion() {
     const explorerView = document.getElementById('riscv-explorer-view');
 
     function collapseAllSubPanes() {
-        let changed = false;
         items.forEach((item) => {
             if (item.classList.contains('active')) {
                 item.classList.remove('active');
@@ -45,12 +19,8 @@ function setupAccordion() {
                 if (trigger) {
                     trigger.setAttribute('aria-expanded', 'false');
                 }
-                changed = true;
             }
         });
-        if (changed) {
-            checkPaneFocusState();
-        }
     }
 
     items.forEach((item) => {
@@ -76,8 +46,6 @@ function setupAccordion() {
             if (e && e.detail > 0) {
                 trigger.blur();
             }
-
-            checkPaneFocusState();
         });
     });
 
@@ -254,10 +222,7 @@ if (typeof window !== 'undefined') {
     window.__diodesign = {
         getTier: () => computeTier,
         getFps: () => targetFps,
-        getBenchmark: () => benchmarkScoreMs,
-        getFocusActivity: () => focusActivityFactor,
-        getTargetActivity: () => targetActivityFactor,
-        isChildPaneActive: () => hasActiveChildPane()
+        getBenchmark: () => benchmarkScoreMs
     };
 }
 
@@ -978,7 +943,7 @@ function buildMaskCanvas() {
 // -------------------------------------------------------------
 // FRAME RENDERING
 // -------------------------------------------------------------
-function renderFrame(time, focusFactor = 1.0) {
+function renderFrame(time) {
     if (!ctx || width === 0 || height === 0 || !mountainGrid) return;
     if (smallScreenQuery.matches) return;
 
@@ -1028,7 +993,7 @@ function renderFrame(time, focusFactor = 1.0) {
         }
     }
 
-    motionTime += dt * speedFactor * focusFactor;
+    motionTime += dt * speedFactor;
 
     // 1. Render reference photograph behind the code rain (exact 1:1 scale & crop)
     const imgEl = getBackgroundImage();
@@ -1268,19 +1233,6 @@ function setupLandscapeInteractions() {
             }
         });
     }
-
-    // 3. Child pane focus observer (normal-to-stop & stop-to-normal CPU governor)
-    const floatingPanel = document.getElementById('floating-panel');
-    if (floatingPanel && typeof MutationObserver !== 'undefined') {
-        const observer = new MutationObserver(() => {
-            checkPaneFocusState();
-        });
-        observer.observe(floatingPanel, {
-            attributes: true,
-            attributeFilter: ['class', 'hidden'],
-            subtree: true
-        });
-    }
 }
 
 function animate(time) {
@@ -1296,49 +1248,17 @@ function animate(time) {
     if (time - lastFrameTime < frameInterval) {
         return;
     }
-
-    const stepDt = (lastFrameTime > 0 && time > lastFrameTime)
-        ? Math.max(0, Math.min(0.1, (time - lastFrameTime) / 1000))
-        : (frameInterval / 1000);
-
     if (lastFrameTime === 0 || time - lastFrameTime > 200) {
         lastFrameTime = time;
     } else {
         lastFrameTime += frameInterval;
     }
 
-    // Normal-to-stop and stop-to-normal dynamic activity governor
-    if (focusActivityFactor !== targetActivityFactor) {
-        if (targetActivityFactor > focusActivityFactor) {
-            // Quickly regain CPU and animation speed (stop-to-normal in ~0.35s)
-            focusActivityFactor += (1.0 - focusActivityFactor) * Math.min(1.0, stepDt * 7.5);
-            if (focusActivityFactor >= 0.98) {
-                focusActivityFactor = 1.0;
-            }
-        } else {
-            // Smoothly slow to a stop (normal-to-stop in ~0.75s)
-            focusActivityFactor += (0.0 - focusActivityFactor) * Math.min(1.0, stepDt * 3.5);
-            if (focusActivityFactor <= 0.02) {
-                focusActivityFactor = 0.0;
-            }
-        }
-    }
-
     const tStart = performance.now();
-    renderFrame(time, focusActivityFactor);
+    renderFrame(time);
     const renderDuration = performance.now() - tStart;
 
-    // When the animation has fully decelerated to a complete stop:
-    // Halt the requestAnimationFrame loop to drop background CPU to 0%
-    if (focusActivityFactor === 0.0 && targetActivityFactor === 0.0) {
-        stopAnimation();
-        return;
-    }
-
-    // Only profile when running at full normal activity to avoid skewing metrics
-    if (focusActivityFactor === 1.0 && targetActivityFactor === 1.0) {
-        profileFramePerformance(renderDuration);
-    }
+    profileFramePerformance(renderDuration);
 }
 
 function resizeAndRebuild() {
@@ -2191,7 +2111,6 @@ function setupRiscvExplorer() {
         if (nextOpen) {
             refreshExplorerUI(true);
         }
-        checkPaneFocusState();
     };
 
     chipBtn.addEventListener('click', () => toggleExplorer());
