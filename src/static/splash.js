@@ -1,31 +1,6 @@
 // ============================================================================
-// 1. SINGLE-OPEN EXPANDABLE ACCORDION CONTROLLER & FOCUS GOVERNOR
+// 1. SINGLE-OPEN EXPANDABLE ACCORDION CONTROLLER
 // ============================================================================
-
-// Dynamic Child-Pane Focus Governor (Normal-to-stop & Stop-to-normal processing loop)
-let focusActivityFactor = 1.0;
-let targetActivityFactor = 1.0;
-
-function hasActiveChildPane() {
-    if (typeof document === 'undefined') return false;
-    const explorer = document.getElementById('riscv-explorer-view');
-    if (explorer && !explorer.hidden) return true;
-    const activeAccordion = document.querySelector('.accordion-item.active');
-    return Boolean(activeAccordion);
-}
-
-function checkPaneFocusState() {
-    const isFocused = hasActiveChildPane();
-    targetActivityFactor = isFocused ? 0.0 : 1.0;
-
-    // If losing focus (closing child pane): immediately wake the animation loop
-    // If gaining focus: ensure loop is running so it can smoothly decelerate to a stop
-    if (!rafId && isAnimationActive()) {
-        if (!isFocused || focusActivityFactor > 0.0) {
-            startAnimation();
-        }
-    }
-}
 
 function setupAccordion() {
     const accordion = document.getElementById('lab-accordion');
@@ -37,7 +12,6 @@ function setupAccordion() {
     const explorerView = document.getElementById('riscv-explorer-view');
 
     function collapseAllSubPanes() {
-        let changed = false;
         items.forEach((item) => {
             if (item.classList.contains('active')) {
                 item.classList.remove('active');
@@ -45,12 +19,8 @@ function setupAccordion() {
                 if (trigger) {
                     trigger.setAttribute('aria-expanded', 'false');
                 }
-                changed = true;
             }
         });
-        if (changed) {
-            checkPaneFocusState();
-        }
     }
 
     items.forEach((item) => {
@@ -76,8 +46,6 @@ function setupAccordion() {
             if (e && e.detail > 0) {
                 trigger.blur();
             }
-
-            checkPaneFocusState();
         });
     });
 
@@ -254,10 +222,7 @@ if (typeof window !== 'undefined') {
     window.__diodesign = {
         getTier: () => computeTier,
         getFps: () => targetFps,
-        getBenchmark: () => benchmarkScoreMs,
-        getFocusActivity: () => focusActivityFactor,
-        getTargetActivity: () => targetActivityFactor,
-        isChildPaneActive: () => hasActiveChildPane()
+        getBenchmark: () => benchmarkScoreMs
     };
 }
 
@@ -281,11 +246,9 @@ function profileFramePerformance(renderDurationMs) {
             } else if (targetFps === 20) {
                 targetFps = 15;
                 frameInterval = 1000 / 15;
-            } else if (targetFps <= 15 && renderDurationMs > 50) {
-                // Extreme lag failsafe: finalize static artwork and stop animation loop
-                isTransitionComplete = true;
-                stopAnimation();
-                renderFrame(performance.now());
+            } else if (targetFps <= 15) {
+                targetFps = 10;
+                frameInterval = 1000 / 10;
             }
         }
     } else {
@@ -316,12 +279,13 @@ const blurCanvas = typeof document !== 'undefined' ? document.createElement('can
 const blurCtx = blurCanvas ? blurCanvas.getContext('2d') : null;
 let isBlurReady = false;
 
-// Grid configuration
-let numRows = 100;
-let numCols = 300;
-let lineHeight = 11;
-let fontSize = 10;
-let charWidth = 6;
+// Grid configuration & line budget
+const MAX_LINE_LIMIT = 60;
+let numRows = 55;
+let numCols = 200;
+let lineHeight = 16;
+let fontSize = 13;
+let charWidth = 8;
 let mountainGrid = null;
 let streamRows = [];
 
@@ -869,18 +833,57 @@ function buildMaskCanvas() {
             0, 0, width, height
         );
 
-        // Precompute active row ranges based on continuous panoramic mask.webp:
-        // Spans full viewport width horizontally, and sky through lower mountain slopes (y <= 560, culling invisible rows below ~78% height)
-        const minX = 0;
-        const maxX = width;
-        const minY = 0;
-        const maxY = Math.min(height, Math.ceil(((560 - photoCrop.sy) / photoCrop.sh) * height));
+        // Accurate mask-based cut-off: sample mask alpha across grid resolution (sampleCols x numRows)
+        // to detect whole lines and horizontal spans where the mask hides the text animation completely.
+        try {
+            const sampleCols = Math.min(numCols, 160);
+            const offCanvas = document.createElement('canvas');
+            offCanvas.width = sampleCols;
+            offCanvas.height = numRows;
+            const offCtx = offCanvas.getContext('2d', { willReadFrequently: true });
+            if (offCtx) {
+                offCtx.drawImage(
+                    maskImg,
+                    photoCrop.sx, photoCrop.sy, photoCrop.sw, photoCrop.sh,
+                    0, 0, sampleCols, numRows
+                );
+                const maskData = offCtx.getImageData(0, 0, sampleCols, numRows).data;
+                maskRowRanges = new Array(numRows);
+                for (let r = 0; r < numRows; r++) {
+                    let firstCol = -1;
+                    let lastCol = -1;
+                    const rowOffset = r * sampleCols * 4;
+                    for (let c = 0; c < sampleCols; c++) {
+                        const alpha = maskData[rowOffset + c * 4 + 3];
+                        if (alpha >= 10) { // Visible opacity threshold (~4%)
+                            if (firstCol === -1) firstCol = c;
+                            lastCol = c;
+                        }
+                    }
+                    if (firstCol !== -1) {
+                        const minX = Math.max(0, Math.floor((firstCol / sampleCols) * width));
+                        const maxX = Math.min(width, Math.ceil(((lastCol + 1) / sampleCols) * width));
+                        maskRowRanges[r] = { minX, maxX };
+                    } else {
+                        // Whole line is completely hidden by mask: skip plotting entirely
+                        maskRowRanges[r] = null;
+                    }
+                }
+                return;
+            }
+        } catch (_) {
+            // Fallback to geometric cut-off if offscreen canvas read is restricted
+        }
 
+        // Geometric cut-off fallback co-registered to maskImg coordinates:
+        // Mask falls to zero alpha at y >= 560 in source 1280x714 reference space
+        const maskCutoffY = 560;
+        const maxY = Math.min(height, Math.ceil(((maskCutoffY - photoCrop.sy) / photoCrop.sh) * height));
         maskRowRanges = new Array(numRows);
         for (let r = 0; r < numRows; r++) {
             const rowY = (streamRows && streamRows[r]) ? streamRows[r].y : Math.round(r * lineHeight);
-            if (rowY >= minY && rowY <= maxY) {
-                maskRowRanges[r] = { minX, maxX };
+            if (rowY <= maxY) {
+                maskRowRanges[r] = { minX: 0, maxX: width };
             } else {
                 maskRowRanges[r] = null;
             }
@@ -978,7 +981,7 @@ function buildMaskCanvas() {
 // -------------------------------------------------------------
 // FRAME RENDERING
 // -------------------------------------------------------------
-function renderFrame(time, focusFactor = 1.0) {
+function renderFrame(time) {
     if (!ctx || width === 0 || height === 0 || !mountainGrid) return;
     if (smallScreenQuery.matches) return;
 
@@ -1028,7 +1031,7 @@ function renderFrame(time, focusFactor = 1.0) {
         }
     }
 
-    motionTime += dt * speedFactor * focusFactor;
+    motionTime += dt * speedFactor;
 
     // 1. Render reference photograph behind the code rain (exact 1:1 scale & crop)
     const imgEl = getBackgroundImage();
@@ -1268,19 +1271,6 @@ function setupLandscapeInteractions() {
             }
         });
     }
-
-    // 3. Child pane focus observer (normal-to-stop & stop-to-normal CPU governor)
-    const floatingPanel = document.getElementById('floating-panel');
-    if (floatingPanel && typeof MutationObserver !== 'undefined') {
-        const observer = new MutationObserver(() => {
-            checkPaneFocusState();
-        });
-        observer.observe(floatingPanel, {
-            attributes: true,
-            attributeFilter: ['class', 'hidden'],
-            subtree: true
-        });
-    }
 }
 
 function animate(time) {
@@ -1296,49 +1286,17 @@ function animate(time) {
     if (time - lastFrameTime < frameInterval) {
         return;
     }
-
-    const stepDt = (lastFrameTime > 0 && time > lastFrameTime)
-        ? Math.max(0, Math.min(0.1, (time - lastFrameTime) / 1000))
-        : (frameInterval / 1000);
-
     if (lastFrameTime === 0 || time - lastFrameTime > 200) {
         lastFrameTime = time;
     } else {
         lastFrameTime += frameInterval;
     }
 
-    // Normal-to-stop and stop-to-normal dynamic activity governor
-    if (focusActivityFactor !== targetActivityFactor) {
-        if (targetActivityFactor > focusActivityFactor) {
-            // Quickly regain CPU and animation speed (stop-to-normal in ~0.35s)
-            focusActivityFactor += (1.0 - focusActivityFactor) * Math.min(1.0, stepDt * 7.5);
-            if (focusActivityFactor >= 0.98) {
-                focusActivityFactor = 1.0;
-            }
-        } else {
-            // Smoothly slow to a stop (normal-to-stop in ~0.75s)
-            focusActivityFactor += (0.0 - focusActivityFactor) * Math.min(1.0, stepDt * 3.5);
-            if (focusActivityFactor <= 0.02) {
-                focusActivityFactor = 0.0;
-            }
-        }
-    }
-
     const tStart = performance.now();
-    renderFrame(time, focusActivityFactor);
+    renderFrame(time);
     const renderDuration = performance.now() - tStart;
 
-    // When the animation has fully decelerated to a complete stop:
-    // Halt the requestAnimationFrame loop to drop background CPU to 0%
-    if (focusActivityFactor === 0.0 && targetActivityFactor === 0.0) {
-        stopAnimation();
-        return;
-    }
-
-    // Only profile when running at full normal activity to avoid skewing metrics
-    if (focusActivityFactor === 1.0 && targetActivityFactor === 1.0) {
-        profileFramePerformance(renderDuration);
-    }
+    profileFramePerformance(renderDuration);
 }
 
 function resizeAndRebuild() {
@@ -1366,33 +1324,33 @@ function resizeAndRebuild() {
     }
 
     // Scale scanline density to detected hardware compute tier:
-    // 'high' (>=8 cores/hw GPU): 14 divisor (65-105 rows, ~100 rows standard)
-    // 'medium' (4-7 cores): 16 divisor (52-85 rows)
-    // 'low' (<=2 cores/sw GPU): 20 divisor (38-65 rows)
-    let rowDivisor = 14;
-    let minRows = 65;
-    let maxRows = 105;
+    // 'high' (>=8 cores/hw GPU): 18 divisor, capped at MAX_LINE_LIMIT (42-60 rows)
+    // 'medium' (4-7 cores): 21 divisor (36-50 rows)
+    // 'low' (<=2 cores/sw GPU): 25 divisor (28-40 rows)
+    let rowDivisor = 18;
+    let minRows = 42;
+    let maxRows = MAX_LINE_LIMIT;
 
     if (computeTier === 'medium') {
-        rowDivisor = 16;
-        minRows = 52;
-        maxRows = 85;
+        rowDivisor = 21;
+        minRows = 36;
+        maxRows = Math.min(50, MAX_LINE_LIMIT);
     } else if (computeTier === 'low') {
-        rowDivisor = 20;
-        minRows = 38;
-        maxRows = 65;
+        rowDivisor = 25;
+        minRows = 28;
+        maxRows = Math.min(40, MAX_LINE_LIMIT);
     }
 
     numRows = Math.max(minRows, Math.min(maxRows, Math.round(height / rowDivisor)));
-    lineHeight = Math.max(10, Math.round(height / numRows));
-    fontSize = Math.max(9, Math.min(13, Math.round(lineHeight * 0.88)));
+    lineHeight = Math.max(12, Math.round(height / numRows));
+    fontSize = Math.max(9, Math.min(24, Math.round(lineHeight * 0.82)));
 
     // Exact monospace character cell width
     if (ctx && ctx.measureText) {
         ctx.font = fontSize + 'px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace';
         charWidth = Math.max(6, ctx.measureText('0').width);
     } else {
-        charWidth = Math.max(6, Math.round(fontSize * 0.65));
+        charWidth = Math.max(6, Math.round(fontSize * 0.60));
     }
 
     numCols = Math.round(width / charWidth);
@@ -2191,7 +2149,6 @@ function setupRiscvExplorer() {
         if (nextOpen) {
             refreshExplorerUI(true);
         }
-        checkPaneFocusState();
     };
 
     chipBtn.addEventListener('click', () => toggleExplorer());
